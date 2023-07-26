@@ -4,37 +4,42 @@ open Elmish
 open Fable.Remoting.Client
 open Shared
 
-type Model = { Todos: Todo list; Input: string }
+type Model = { Books: Book list; TitleInput: string; FirstNameInput: string; LastNameInput: string }
 
 type Msg =
-    | GotTodos of Todo list
-    | SetInput of string
-    | AddTodo
-    | AddedTodo of Todo
+    | GotBooks of Book list
+    | SetTitleInput of string
+    | SetFirstNameInput of string
+    | SetLastNameInput of string
+    | AddBook
+    | AddedBook of Book
 
-let todosApi =
+let bookstoreApi =
     Remoting.createApi ()
     |> Remoting.withRouteBuilder Route.builder
-    |> Remoting.buildProxy<ITodosApi>
+    |> Remoting.buildProxy<IBookstoreApi>
 
 let init () : Model * Cmd<Msg> =
-    let model = { Todos = []; Input = "" }
+    let model = { Books = []; TitleInput = ""; FirstNameInput = ""; LastNameInput = ""}
 
-    let cmd = Cmd.OfAsync.perform todosApi.getTodos () GotTodos
+    let cmd = Cmd.OfAsync.perform bookstoreApi.getBooks () GotBooks
 
     model, cmd
 
 let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     match msg with
-    | GotTodos todos -> { model with Todos = todos }, Cmd.none
-    | SetInput value -> { model with Input = value }, Cmd.none
-    | AddTodo ->
-        let todo = Todo.create model.Input
+    | GotBooks books -> { model with Books = books }, Cmd.none
+    | SetTitleInput value -> { model with TitleInput = value }, Cmd.none
+    | SetFirstNameInput value -> { model with FirstNameInput = value }, Cmd.none
+    | SetLastNameInput value -> { model with LastNameInput = value }, Cmd.none
+    | AddBook ->
+        let author = Author.create (model.FirstNameInput, model.LastNameInput)
+        let book = Book.create (model.TitleInput, author)
 
-        let cmd = Cmd.OfAsync.perform todosApi.addTodo todo AddedTodo
+        let cmd = Cmd.OfAsync.perform bookstoreApi.addBook book AddedBook
 
-        { model with Input = "" }, cmd
-    | AddedTodo todo -> { model with Todos = model.Todos @ [ todo ] }, Cmd.none
+        { model with TitleInput = ""; FirstNameInput = ""; LastNameInput = "" }, cmd
+    | AddedBook book -> { model with Books = model.Books @ [ book ] }, Cmd.none
 
 open Feliz
 open Feliz.Bulma
@@ -57,8 +62,8 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
     Bulma.box [
         Bulma.content [
             Html.ol [
-                for todo in model.Todos do
-                    Html.li [ prop.text todo.Description ]
+                for book in model.Books do
+                    Html.li [ prop.text book.Title ]
             ]
         ]
         Bulma.field.div [
@@ -68,17 +73,27 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
                     control.isExpanded
                     prop.children [
                         Bulma.input.text [
-                            prop.value model.Input
-                            prop.placeholder "What needs to be done?"
-                            prop.onChange (fun x -> SetInput x |> dispatch)
+                            prop.value model.TitleInput
+                            prop.placeholder "Specify book title"
+                            prop.onChange (fun x -> SetTitleInput x |> dispatch)
+                        ]
+                        Bulma.input.text [
+                            prop.value model.FirstNameInput
+                            prop.placeholder "Author first name"
+                            prop.onChange (fun x -> SetFirstNameInput x |> dispatch)
+                        ]
+                        Bulma.input.text [
+                            prop.value model.LastNameInput
+                            prop.placeholder "Author last name"
+                            prop.onChange (fun x -> SetLastNameInput x |> dispatch)
                         ]
                     ]
                 ]
                 Bulma.control.p [
                     Bulma.button.a [
                         color.isPrimary
-                        prop.disabled (Todo.isValid model.Input |> not)
-                        prop.onClick (fun _ -> dispatch AddTodo)
+                        prop.disabled (Book.isValid (model.TitleInput, Author.create(model.FirstNameInput, model.LastNameInput)) |> not)
+                        prop.onClick (fun _ -> dispatch AddBook)
                         prop.text "Add"
                     ]
                 ]

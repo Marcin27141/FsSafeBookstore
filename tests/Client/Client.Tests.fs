@@ -10,7 +10,7 @@ let client = testList "Client" [
         let newTodo = Todo.create "new todo"
         let model, _ = init ()
 
-        let model, _ = update (AddedTodo newTodo) model
+        let model, _ = update (AddedBook newTodo) model
 
         Expect.equal model.Todos.Length 1 "There should be 1 todo"
         Expect.equal model.Todos.[0] newTodo "Todo should equal new todo"
