@@ -11,7 +11,7 @@ type Page =
 
 type AuthorModel = { Authors: Author list; FirstNameInput: string; LastNameInput: string }
 type BookModel = { Books: Book list; Authors: Author list; TitleInput: string; AuthorId: string }
-type Model = { AuthorModel: AuthorModel; BookModel: BookModel; CurrentPage: Page }
+type Model = { AuthorModel: AuthorModel; Authors: Author list; BookModel: BookModel; CurrentPage: Page }
 
 type BookMsg =
     | GotBooks of Book list
@@ -40,7 +40,7 @@ let bookstoreApi =
 let init () : Model * Cmd<Msg> =
     let authorModel = { Authors = []; FirstNameInput = ""; LastNameInput = "" }
     let bookModel = { Books = []; Authors = []; TitleInput = ""; AuthorId = "" }
-    let model = { AuthorModel = authorModel; BookModel = bookModel; CurrentPage = Page.BookList }
+    let model = { AuthorModel = authorModel; BookModel = bookModel; CurrentPage = Page.BookList; Authors = [] }
 
     let cmd = Cmd.OfAsync.perform bookstoreApi.getBooks () GotBooks
 
@@ -74,10 +74,10 @@ let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     | AuthorMsg authorMsg ->
         match authorMsg with
         | SetFirstNameInput value ->
-            let newModel = { model.AuthorModel with FirstNameInput = "" }
+            let newModel = { model.AuthorModel with FirstNameInput = value }
             { model with AuthorModel = newModel }, Cmd.none
         | SetLastNameInput value ->
-            let newModel = { model.AuthorModel with LastNameInput = "" }
+            let newModel = { model.AuthorModel with LastNameInput = value }
             { model with AuthorModel = newModel }, Cmd.none
         | AddAuthor ->
             let author = Author.create (model.AuthorModel.FirstNameInput, model.AuthorModel.LastNameInput)
@@ -88,9 +88,15 @@ let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
             let newModel = { model.AuthorModel with Authors = model.AuthorModel.Authors @ [ author ] }
             { model with AuthorModel = newModel }, Cmd.ofMsg (SwitchPage Page.BookList)
     | SwitchPage page ->
-
-        let newModel = { model with CurrentPage = page }
-        newModel, Cmd.none
+        let updatedModel =
+            match page with
+            | Page.BookList ->
+                let newModel = { model.BookModel with Authors = model.AuthorModel.Authors }
+                { model with BookModel = newModel }
+            | Page.CreateAuthor ->
+                let newModel = { model.AuthorModel with Authors = model.BookModel.Authors }
+                { model with AuthorModel = newModel }
+        { updatedModel with CurrentPage = page}, Cmd.none
     
 
 open Feliz
@@ -110,7 +116,16 @@ let navBrand =
         ]
     ]
 
-let booklistContainerBox (model:BookModel) (dispatch: BookMsg -> unit) =
+let authorDropdownOptions (authors: Author list) =
+    authors
+    |> List.map (fun author ->
+        Html.option [
+            prop.value (author.Id.ToString())
+            prop.text (sprintf "%s %s" author.FirstName author.LastName)
+        ])
+
+let booklistContainerBox (model: BookModel) (dispatch: BookMsg -> unit) =
+    model.Authors |> List.iter (fun a -> printf "!!!!!!!!!!!!!!!!!!!!!!!%s" a.FirstName)
     Bulma.box [
         Bulma.content [
             Html.ol [
@@ -131,11 +146,8 @@ let booklistContainerBox (model:BookModel) (dispatch: BookMsg -> unit) =
                         ]
                         Bulma.select [
                             prop.onChange (fun id -> SetAuthorId id |> dispatch)
-                            prop.children [
-                                for author in model.Authors do
-                                    Html.option [
-                                        prop.value (author.Id.ToString())
-                                        prop.text (sprintf "%s %s" author.FirstName author.LastName) ] ] ]
+                            prop.children (authorDropdownOptions model.Authors)
+                        ]
                     ]
                 ]
                 Bulma.control.p [
@@ -218,6 +230,16 @@ let view (model:Model) (dispatch: Msg -> unit) =
                             Bulma.title [
                                 text.hasTextCentered
                                 prop.text "FsSafeApplication"
+                            ]
+                            Bulma.button.a [
+                                color.isInfo
+                                let getPageAndText =
+                                    match model.CurrentPage with
+                                    | Page.BookList -> Page.CreateAuthor, "Create author"
+                                    | Page.CreateAuthor -> Page.BookList, "Show booklist"
+                                let page, text = getPageAndText
+                                prop.onClick (fun _ -> dispatch (SwitchPage page))
+                                prop.text text
                             ]
                             match model.CurrentPage with
                             | Page.BookList -> booklistContainerBox model.BookModel booklistDispatch
