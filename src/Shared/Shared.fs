@@ -31,7 +31,10 @@ module Route =
 
 type IBookstoreApi =
     { getBooks: unit -> Async<Book list>
-      addBook: Book -> Async<Book> }
+      addBook: Book -> Async<Book>
+      getAuthor: Guid -> Async<Author>
+      getAuthors: unit -> Async<Author list>
+      addAuthor: Author -> Async<Author> }
 
 //type Todo = { Id: Guid; Description: string }
 
