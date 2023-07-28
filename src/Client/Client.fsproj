@@ -5,7 +5,6 @@
         <DefineConstants>FABLE_COMPILER</DefineConstants>
     </PropertyGroup>
     <ItemGroup>
-        <Compile Include="SharedView.fs" />
         <Compile Include="CreateAuthor.fs" />
         <Compile Include="Booklist.fs" />
         <None Include="index.html" />

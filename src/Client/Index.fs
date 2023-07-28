@@ -27,16 +27,24 @@ let bookstoreApi =
 
 let init () : Model * Cmd<Msg> =
     let bookModel, bookCmd = Booklist.init()
-    let authorModel = CreateAuthor.init()
+    let authorModel, authorCmd = CreateAuthor.init()
     let model = { AuthorModel = authorModel; BookModel = bookModel; CurrentPage = Page.BookList; Authors = [] }
-    model, Cmd.map BookMsg bookCmd
+
+    let initialCmd = Cmd.batch [
+        Cmd.map BookMsg bookCmd
+        Cmd.map AuthorMsg authorCmd
+    ]
+
+    model, initialCmd
 
 let updateSwitchPage (model: Model) (page: Page) =
     match page with
     | Page.BookList ->
         let newModel = { model.BookModel with Authors = model.AuthorModel.Authors }
         { model with BookModel = newModel }
-    | Page.CreateAuthor -> model
+    | Page.CreateAuthor ->
+        let newModel = { model.AuthorModel with Authors = model.BookModel.Authors }
+        { model with AuthorModel = newModel }
 
 let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     match msg with

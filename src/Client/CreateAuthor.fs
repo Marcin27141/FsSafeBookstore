@@ -10,6 +10,7 @@ open Feliz.Bulma
 type Model = { Authors: Author list; FirstNameInput: string; LastNameInput: string }
 
 type Msg =
+    | GotAuthors of Author list
     | SetFirstNameInput of string
     | SetLastNameInput of string
     | AddAuthor
@@ -20,12 +21,16 @@ let bookstoreApi =
     |> Remoting.withRouteBuilder Route.builder
     |> Remoting.buildProxy<IBookstoreApi>
 
-let init () : Model =
+let init () : Model * Cmd<Msg> =
     let model = { Authors = []; FirstNameInput = ""; LastNameInput = "" }
-    model
+    let cmd = Cmd.OfAsync.perform bookstoreApi.getAuthors () GotAuthors
+    model, cmd
 
 let update (msg: Msg) (model: Model) =
     match msg with
+    | GotAuthors authors ->
+        let newModel = { model with Authors = authors }
+        newModel, Cmd.none
     | SetFirstNameInput value ->
         let newModel = { model with FirstNameInput = value }
         newModel, Cmd.none
@@ -60,7 +65,6 @@ let render (model: Model) (dispatch: Msg -> unit) =
                             prop.placeholder "Author's first name"
                             prop.onChange (fun x -> SetFirstNameInput x |> dispatch)
                         ]
-                        //SharedView.divider
                         Bulma.input.text [
                             prop.value model.LastNameInput
                             prop.placeholder "Author's last name"

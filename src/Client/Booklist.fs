@@ -12,6 +12,7 @@ type Model = { Books: Book list; Authors: Author list; TitleInput: string; Autho
 
 type Msg =
     | GotBooks of Book list
+    | GotAuthors of Author list
     | SetTitleInput of string
     | SetAuthorId of string
     | AddBook of Author
@@ -25,11 +26,17 @@ let bookstoreApi =
 
 let init () : Model * Cmd<Msg> =
     let model = { Books = []; Authors = []; TitleInput = ""; AuthorId = "" }
-    let cmd = Cmd.OfAsync.perform bookstoreApi.getBooks () GotBooks
-    model, cmd
+    let initialCmd = Cmd.batch [
+        Cmd.OfAsync.perform bookstoreApi.getBooks () GotBooks
+        Cmd.OfAsync.perform bookstoreApi.getAuthors () GotAuthors
+    ]
+    model, initialCmd
 
 let update (msg: Msg) (model: Model) =
     match msg with
+    | GotAuthors authors ->
+        let newModel = { model with Authors = authors }
+        newModel, Cmd.none
     | GotBooks books ->
         let newModel = { model with Books = books }
         newModel, Cmd.none
@@ -80,7 +87,6 @@ let render (model: Model) (dispatch: Msg -> unit) =
                             prop.placeholder "Specify book title"
                             prop.onChange (fun x -> SetTitleInput x |> dispatch)
                         ]
-                        //SharedView.divider
                         Bulma.select [
                             prop.onChange (fun id -> SetAuthorId id |> dispatch)
                             prop.children (authorDropdownOptions model.Authors)
