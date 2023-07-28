@@ -10,53 +10,46 @@ open Feliz.Bulma
 
 [<RequireQualifiedAccess>]
 type Page =
-    | BookList
-    | CreateAuthor
+    | BookList of Booklist.Model
+    | CreateAuthor of CreateAuthor.Model
 
-type Model = { AuthorModel: CreateAuthor.Model; Authors: Author list; BookModel: Booklist.Model; CurrentPage: Page }
+type Model = { CurrentPage: Page }
 
 type Msg =
     | BookMsg of Booklist.Msg
     | AuthorMsg of CreateAuthor.Msg
-    | SwitchPage of Page
-
-let bookstoreApi =
-    Remoting.createApi ()
-    |> Remoting.withRouteBuilder Route.builder
-    |> Remoting.buildProxy<IBookstoreApi>
+    | SwitchToCreateAuthor
+    | SwitchToBooklist
 
 let init () : Model * Cmd<Msg> =
     let bookModel, bookCmd = Booklist.init()
-    let authorModel, authorCmd = CreateAuthor.init()
-    let model = { AuthorModel = authorModel; BookModel = bookModel; CurrentPage = Page.BookList; Authors = [] }
+    let model = { CurrentPage = Page.BookList bookModel }
+    model, Cmd.map BookMsg bookCmd
 
-    let initialCmd = Cmd.batch [
-        Cmd.map BookMsg bookCmd
-        Cmd.map AuthorMsg authorCmd
-    ]
-
-    model, initialCmd
-
-let updateSwitchPage (model: Model) (page: Page) =
+let getNextPageAndCmd (model: Model) (page: Page) =
     match page with
-    | Page.BookList ->
-        let newModel = { model.BookModel with Authors = model.AuthorModel.Authors }
-        { model with BookModel = newModel }
-    | Page.CreateAuthor ->
-        let newModel = { model.AuthorModel with Authors = model.BookModel.Authors }
-        { model with AuthorModel = newModel }
+    | Page.BookList _ ->
+        let newModel, cmd = Booklist.init()
+        Page.BookList newModel, Cmd.map BookMsg cmd
+    | Page.CreateAuthor _ ->
+        let newModel, cmd = CreateAuthor.init()
+        Page.CreateAuthor newModel, Cmd.map AuthorMsg cmd
 
 let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
-    match msg with
-    | BookMsg bookMsg ->
-        let bookModel, cmd = Booklist.update bookMsg model.BookModel
-        { model with BookModel = bookModel }, Cmd.map BookMsg cmd
-    | AuthorMsg authorMsg ->
-        let authorModel, cmd = CreateAuthor.update authorMsg model.AuthorModel
-        { model with AuthorModel = authorModel}, Cmd.map AuthorMsg cmd
-    | SwitchPage page ->
-        let newModel = updateSwitchPage model page
-        { newModel with CurrentPage = page}, Cmd.none
+    match model.CurrentPage, msg with
+    | Page.BookList bookModel, BookMsg bookMsg ->
+        let bookModel, cmd = Booklist.update bookMsg bookModel
+        { model with CurrentPage = Page.BookList bookModel }, Cmd.map BookMsg cmd
+    | Page.CreateAuthor authorModel, AuthorMsg authorMsg ->
+        let authorModel, cmd = CreateAuthor.update authorMsg authorModel
+        { model with CurrentPage = Page.CreateAuthor authorModel }, Cmd.map AuthorMsg cmd
+    | _, SwitchToBooklist ->
+        let newModel, cmd = Booklist.init()
+        { model with CurrentPage = Page.BookList newModel }, Cmd.map BookMsg cmd
+    | _, SwitchToCreateAuthor ->
+        let newModel, cmd = CreateAuthor.init()
+        { model with CurrentPage = Page.CreateAuthor newModel }, Cmd.map AuthorMsg cmd
+    | _, _ -> model, Cmd.none
 
 let navBrand =
     Bulma.navbarBrand.div [
@@ -99,17 +92,17 @@ let view (model:Model) (dispatch: Msg -> unit) =
                             ]
                             Bulma.button.a [
                                 color.isInfo
-                                let getPageAndText =
+                                let getMsgAndText =
                                     match model.CurrentPage with
-                                    | Page.BookList -> Page.CreateAuthor, "Create author"
-                                    | Page.CreateAuthor -> Page.BookList, "Show booklist"
-                                let page, text = getPageAndText
-                                prop.onClick (fun _ -> dispatch (SwitchPage page))
+                                    | Page.BookList _ -> SwitchToCreateAuthor, "Create author"
+                                    | Page.CreateAuthor _ -> SwitchToBooklist, "Show booklist"
+                                let msg, text = getMsgAndText
+                                prop.onClick (fun _ -> dispatch msg)
                                 prop.text text
                             ]
                             match model.CurrentPage with
-                            | Page.BookList -> Booklist.render model.BookModel (Msg.BookMsg >> dispatch)
-                            | Page.CreateAuthor -> CreateAuthor.render model.AuthorModel (Msg.AuthorMsg >> dispatch)
+                            | Page.BookList model -> Booklist.render model (Msg.BookMsg >> dispatch)
+                            | Page.CreateAuthor model -> CreateAuthor.render model (Msg.AuthorMsg >> dispatch)
                         ]
                     ]
                 ]
