@@ -107,7 +107,7 @@ let render (model: Model) (dispatch: Msg -> unit) =
 
                 centered [
                     Html.img [
-                        prop.src "https://fable.io/img/fable_logo.png"
+                        prop.src "/logo_fable.png"
                         prop.height 160
                         prop.width 140
                    ]

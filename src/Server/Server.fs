@@ -70,15 +70,21 @@ let userApi =
             
     }
 
-let webApp =
+//let webApp =
+//    Remoting.createApi ()
+//    |> Remoting.withRouteBuilder Route.builder
+//    |> Remoting.fromValue bookstoreApi
+//    |> Remoting.buildHttpHandler
+
+let userApp =
     Remoting.createApi ()
     |> Remoting.withRouteBuilder Route.builder
-    |> Remoting.fromValue bookstoreApi
+    |> Remoting.fromValue userApi
     |> Remoting.buildHttpHandler
 
 let app =
     application {
-        use_router webApp
+        use_router userApp
         memory_cache
         use_static "public"
         use_gzip
