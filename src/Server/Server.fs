@@ -5,6 +5,7 @@ open Fable.Remoting.Giraffe
 open Saturn
 
 open Shared
+open System
 
 module Storage =
     let authors = ResizeArray()
@@ -54,6 +55,20 @@ let bookstoreApi =
                     | Error e -> failwith e
             }
             }
+
+let userApi =
+    { login =
+        fun (user, password) ->
+            async {
+                do! Async.Sleep 1500
+                match user, password with
+                | "admin", "admin" ->
+                    let accessToken = Guid.NewGuid().ToString()
+                    return LoggedIn { Username = user; AccessToken = AccessToken accessToken }
+                | _, _ -> return UsernameOrPasswordIncorrect
+            }
+            
+    }
 
 let webApp =
     Remoting.createApi ()

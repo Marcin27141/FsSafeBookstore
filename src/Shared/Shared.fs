@@ -36,6 +36,24 @@ type IBookstoreApi =
       getAuthors: unit -> Async<Author list>
       addAuthor: Author -> Async<Author> }
 
+type AccessToken = AccessToken of string
+
+type User =
+    { Username : string
+      AccessToken : AccessToken }
+
+type LoginResult =
+    | UsernameOrPasswordIncorrect
+    | LoggedIn of User
+
+type LoginProcess =
+    | NotStarted
+    | InProgress
+    | Finished of LoginResult
+
+type IUserApi =
+    { login: string * string -> Async<LoginResult> }
+
 //type Todo = { Id: Guid; Description: string }
 
 //module Todo =
