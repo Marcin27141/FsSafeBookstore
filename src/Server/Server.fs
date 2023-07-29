@@ -62,7 +62,7 @@ let userApi =
             async {
                 do! Async.Sleep 1500
                 match user, password with
-                | "admin", "admin" ->
+                | x, y when x = y ->
                     let accessToken = Guid.NewGuid().ToString()
                     return LoggedIn { Username = user; AccessToken = AccessToken accessToken }
                 | _, _ -> return UsernameOrPasswordIncorrect

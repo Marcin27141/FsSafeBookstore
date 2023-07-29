@@ -10,6 +10,7 @@ type Model =
   { User: User }
 
 type Msg =
+    | SthToDoOnHomePage
     | Logout
 
 let init(user: User) =
@@ -18,6 +19,7 @@ let init(user: User) =
 let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     match msg with
     | Logout -> model, Cmd.none
+    | _ -> model, Cmd.none
 
 let centered (children: ReactElement list) =
     Html.div [

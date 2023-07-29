@@ -30,8 +30,13 @@ let update (msg: Msg) (model: Model) =
             let (updatedLoginModel, loginCmd) = Login.update loginMsg loginModel
             { model with CurrentPage = Page.Login updatedLoginModel}, Cmd.map LoginMsg loginCmd
     | HomeMsg homeMsg, Page.Home homeModel ->
-        let (updatedHomeModel, homeCmd) = AfterLogin.update homeMsg homeModel
-        { model with CurrentPage = Page.Home updatedHomeModel}, Cmd.map HomeMsg homeCmd
+        match homeMsg with
+        | AfterLogin.Msg.Logout ->
+            let loginModel, loginCmd = Login.init()
+            { model with CurrentPage = Page.Login loginModel }, Cmd.map LoginMsg loginCmd
+        | _ ->
+            let (updatedHomeModel, homeCmd) = AfterLogin.update homeMsg homeModel
+            { model with CurrentPage = Page.Home updatedHomeModel}, Cmd.map HomeMsg homeCmd
     | _, _ ->
         model, Cmd.none
 
