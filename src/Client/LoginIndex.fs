@@ -22,21 +22,21 @@ let init() =
 let update (msg: Msg) (model: Model) =
     match msg, model.CurrentPage with
     | LoginMsg loginMsg, Page.Login loginModel ->
-        match loginMsg with
-        | Login.UserLoggedIn user ->
+        let updatedLoginModel, loginCmd, intent = Login.update loginMsg loginModel
+        match intent with
+        | Login.Intent.UserLoggedIn user ->
             let homeModel, homeCmd = AfterLogin.init user
             { model with CurrentPage = Page.Home homeModel}, Cmd.map HomeMsg homeCmd
-        | _ ->
-            let (updatedLoginModel, loginCmd) = Login.update loginMsg loginModel
-            { model with CurrentPage = Page.Login updatedLoginModel}, Cmd.map LoginMsg loginCmd
+        | Login.Intent.DoNothing ->
+            { model with CurrentPage = Page.Login updatedLoginModel }, Cmd.map LoginMsg loginCmd
     | HomeMsg homeMsg, Page.Home homeModel ->
-        match homeMsg with
-        | AfterLogin.Msg.Logout ->
+        let updatedModel, cmd, intent = AfterLogin.update homeMsg homeModel
+        match intent with
+        | AfterLogin.Intent.LogoutUser user ->
             let loginModel, loginCmd = Login.init()
             { model with CurrentPage = Page.Login loginModel }, Cmd.map LoginMsg loginCmd
-        | _ ->
-            let (updatedHomeModel, homeCmd) = AfterLogin.update homeMsg homeModel
-            { model with CurrentPage = Page.Home updatedHomeModel}, Cmd.map HomeMsg homeCmd
+        | AfterLogin.Intent.DoNothing ->
+            { model with CurrentPage = Page.Home updatedModel }, Cmd.map HomeMsg cmd
     | _, _ ->
         model, Cmd.none
 

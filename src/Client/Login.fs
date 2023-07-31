@@ -17,6 +17,11 @@ type Msg =
     | LoginStarted
     | GotLoginResult of LoginResult
 
+[<RequireQualifiedAccess>]
+type Intent =
+    | UserLoggedIn of User
+    | DoNothing
+
 let (|UserLoggedIn|_|) = function
     | Msg.GotLoginResult (LoggedIn user) -> Some user
     | _ -> None
@@ -34,19 +39,22 @@ let init() =
 let update (msg: Msg) (model: Model) =
     match msg with
     | UsernameChanged username ->
-        { model with Username = username }, Cmd.none
+        { model with Username = username }, Cmd.none, Intent.DoNothing
     | PasswordChanged password ->
-        { model with Password = password }, Cmd.none
+        { model with Password = password }, Cmd.none, Intent.DoNothing
     | LoginStarted ->
         let nextModel = { model with LoginProcess = InProgress }
         let cmd = async {
             let! loginResult = userApi.login (model.Username, model.Password)
             return GotLoginResult loginResult
         }
-        nextModel, Cmd.OfAsync.result cmd
+        nextModel, Cmd.OfAsync.result cmd, Intent.DoNothing
+    | GotLoginResult (LoggedIn user) ->
+        let nextModel = { model with LoginProcess = Finished (LoggedIn user) }
+        nextModel, Cmd.none, Intent.UserLoggedIn user
     | GotLoginResult loginResult ->
         let nextModel = { model with LoginProcess = Finished loginResult }
-        nextModel, Cmd.none
+        nextModel, Cmd.none, Intent.DoNothing
 
 let renderLoginOutcome (loginProcess: LoginProcess)=
     match loginProcess with

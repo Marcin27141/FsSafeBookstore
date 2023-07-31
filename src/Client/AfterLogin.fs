@@ -13,13 +13,18 @@ type Msg =
     | SthToDoOnHomePage
     | Logout
 
+[<RequireQualifiedAccess>]
+type Intent =
+    | LogoutUser of User
+    | DoNothing
+
 let init(user: User) =
     { User = user }, Cmd.none
 
-let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
+let update (msg: Msg) (model: Model) =
     match msg with
-    | Logout -> model, Cmd.none
-    | _ -> model, Cmd.none
+    | Logout -> model, Cmd.none, Intent.LogoutUser model.User
+    | _ -> model, Cmd.none, Intent.DoNothing
 
 let centered (children: ReactElement list) =
     Html.div [
