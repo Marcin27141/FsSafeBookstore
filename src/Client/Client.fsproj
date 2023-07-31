@@ -5,6 +5,7 @@
         <DefineConstants>FABLE_COMPILER</DefineConstants>
     </PropertyGroup>
     <ItemGroup>
+        <Compile Include="UrlListener.fs" />
         <Compile Include="Login.fs" />
         <Compile Include="AfterLogin.fs" />
         <Compile Include="LoginIndex.fs" />
@@ -14,6 +15,9 @@
         <None Include="paket.references" />
         <Compile Include="Index.fs" />
         <Compile Include="App.fs" />
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="Feliz.Router" Version="3.0.1" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\Shared\Shared.fsproj" />
