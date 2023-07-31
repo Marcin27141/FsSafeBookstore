@@ -9,8 +9,8 @@ open Elmish.HMR
 #endif
 
 //Program.mkProgram Index.init Index.update Index.view
-//Program.mkProgram LoginIndex.init LoginIndex.update LoginIndex.render
-Program.mkProgram UrlListener.init UrlListener.update UrlListener.render
+Program.mkProgram LoginIndex.init LoginIndex.update LoginIndex.render
+//Program.mkProgram UrlListener.init UrlListener.update UrlListener.render
 #if DEBUG
 |> Program.withConsoleTrace
 #endif

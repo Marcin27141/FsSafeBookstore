@@ -3,15 +3,16 @@ module AfterLogin
 
 open Elmish
 open Shared
-open Fable.React
 open Feliz
+open Feliz.Router
+open Fable
 
 type Model =
-  { User: User }
+  { User: User; CurrentUrl : string list }
 
 type Msg =
-    | SthToDoOnHomePage
     | Logout
+    | UrlChanged of string list
 
 [<RequireQualifiedAccess>]
 type Intent =
@@ -19,12 +20,12 @@ type Intent =
     | DoNothing
 
 let init(user: User) =
-    { User = user }, Cmd.none
+    { User = user; CurrentUrl = Router.currentUrl() }, Cmd.none
 
 let update (msg: Msg) (model: Model) =
     match msg with
+    | UrlChanged url -> { model with CurrentUrl = url }, Cmd.none, Intent.DoNothing
     | Logout -> model, Cmd.none, Intent.LogoutUser model.User
-    | _ -> model, Cmd.none, Intent.DoNothing
 
 let centered (children: ReactElement list) =
     Html.div [
@@ -38,7 +39,7 @@ let centered (children: ReactElement list) =
         prop.children children
     ]
 
-let render (model: Model) (dispatch: Msg -> unit) =
+let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
     centered [
         Html.h1 [
             Html.strong (model.User.Username.ToUpper())
@@ -50,3 +51,20 @@ let render (model: Model) (dispatch: Msg -> unit) =
             prop.text "Logout"
         ]
     ]
+
+let render (model: Model) (dispatch: Msg -> unit) =
+    Html.div [
+        getHomePageContent model dispatch
+        let activePage =
+            match model.CurrentUrl with
+            | [ ] -> Html.none
+            | [ "about" ] -> Html.h1 "About"
+            | [ "contact" ] -> Html.h1 "Contact"
+            | _ -> Html.h1 "Not Found"
+
+        React.router [
+            router.onUrlChanged (UrlChanged >> dispatch)
+            router.children [ activePage ]
+        ]
+    ]
+    
