@@ -65,7 +65,7 @@ let navBrand =
         ]
     ]
 
-let view (model:Model) (dispatch: Msg -> unit) =
+let render (model:Model) (dispatch: Msg -> unit) =
     Bulma.hero [
         hero.isFullHeight
         color.isPrimary

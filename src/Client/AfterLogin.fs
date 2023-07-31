@@ -7,12 +7,20 @@ open Feliz
 open Feliz.Router
 open Fable
 
+[<RequireQualifiedAccess>]
+type Page =
+  | Home
+  | Index of Index.Model
+  | NotFound
+
 type Model =
-  { User: User; CurrentUrl : string list }
+  { User: User; CurrentPage: Page; CurrentUrl : string list }
 
 type Msg =
     | Logout
     | UrlChanged of string list
+    | IndexMsg of Index.Msg
+    | ChangePageToIndex
 
 [<RequireQualifiedAccess>]
 type Intent =
@@ -20,12 +28,27 @@ type Intent =
     | DoNothing
 
 let init(user: User) =
-    { User = user; CurrentUrl = Router.currentUrl() }, Cmd.none
+    { User = user; CurrentPage = Page.Home; CurrentUrl = Router.currentUrl() }, Cmd.none
 
 let update (msg: Msg) (model: Model) =
-    match msg with
-    | UrlChanged url -> { model with CurrentUrl = url }, Cmd.none, Intent.DoNothing
-    | Logout -> model, Cmd.none, Intent.LogoutUser model.User
+    match msg, model.CurrentPage with
+    | UrlChanged url, _ ->
+        let getModelWithPageAndCmd =
+            match url with
+            | [ "booklist" ] ->
+                let indexModel, indexCmd = Index.init()
+                { model with CurrentPage = Page.Index indexModel; },Cmd.map IndexMsg indexCmd
+            | [] ->
+                let homeModel, homeCmd = init (model.User)
+                homeModel, homeCmd
+            | _ -> { model with CurrentPage = Page.NotFound }, Cmd.none
+        let updatedPage, cmd = getModelWithPageAndCmd
+        { updatedPage with CurrentUrl = url}, cmd, Intent.DoNothing
+    | Logout, _ -> model, Cmd.none, Intent.LogoutUser model.User
+    | IndexMsg indexMsg, Page.Index indexModel ->
+        let updatedIndexModel, indexCmd = Index.update indexMsg indexModel
+        { model with CurrentPage = Page.Index updatedIndexModel }, Cmd.map IndexMsg indexCmd, Intent.DoNothing
+    | _, _ -> model, Cmd.none, Intent.DoNothing
 
 let centered (children: ReactElement list) =
     Html.div [
@@ -54,17 +77,17 @@ let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
 
 let render (model: Model) (dispatch: Msg -> unit) =
     Html.div [
-        getHomePageContent model dispatch
-        let activePage =
-            match model.CurrentUrl with
-            | [ ] -> Html.none
-            | [ "about" ] -> Html.h1 "About"
-            | [ "contact" ] -> Html.h1 "Contact"
-            | _ -> Html.h1 "Not Found"
-
+        getHomePageContent model dispatch       
         React.router [
             router.onUrlChanged (UrlChanged >> dispatch)
-            router.children [ activePage ]
         ]
+        match model.CurrentPage with
+        | Page.Home -> Html.none
+        | Page.Index model -> Index.render model (Msg.IndexMsg >> dispatch)
+        | Page.NotFound ->
+            centered [
+                Html.h1 [
+                    Html.strong "Page not found"
+                ]
+            ]
     ]
-    
