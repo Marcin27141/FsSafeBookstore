@@ -42,6 +42,11 @@ type User =
     { Username : string
       AccessToken : AccessToken }
 
+type LoginRequest = {
+    Username: string
+    Password: string
+}
+
 type LoginResult =
     | UsernameOrPasswordIncorrect
     | LoggedIn of User
@@ -52,7 +57,7 @@ type LoginProcess =
     | Finished of LoginResult
 
 type IUserApi =
-    { login: string * string -> Async<LoginResult> }
+    { login: LoginRequest -> Async<LoginResult> }
 
 //type Todo = { Id: Guid; Description: string }
 

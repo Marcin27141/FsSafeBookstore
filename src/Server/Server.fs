@@ -61,7 +61,8 @@ let bookstoreApi =
 
 let userApi =
     { login =
-        fun (user, password) ->
+        fun loginRequest ->
+            let user, password = loginRequest.Username, loginRequest.Password
             async {
                 do! Async.Sleep 1500
                 match user, password with
@@ -126,27 +127,15 @@ type apiType = Giraffe.Core.HttpFunc -> AspNetCore.Http.HttpContext -> Giraffe.C
 
 let userApp =
     choose [
-        GET >=> (json { Username = "admin"; AccessToken = AccessToken (Guid.NewGuid().ToString()) })
         POST >=> fun (next : HttpFunc) (ctx : HttpContext) ->
             task {
-                let! user = ctx.BindJsonAsync<User>()
-                let! result = Async.StartAsTask (userApi.login (user.Username, "admin"))
+                let! loginRequest = ctx.BindJsonAsync<LoginRequest>()
+                let! result = Async.StartAsTask (userApi.login loginRequest)
                 return! Successful.OK result next ctx
             }
-        //POST >=> (bindJson<User> (fun user ->
-        //    let getLoginResult () =
-        //        async {
-        //            do! Async.Sleep 1500
-        //            match user.Username with
-        //            | "admin" ->
-        //                let accessToken = Guid.NewGuid().ToString()
-        //                return LoggedIn { Username = user.Username; AccessToken = AccessToken accessToken }; setStatusCode 200
-        //            | _ -> return UsernameOrPasswordIncorrect; setStatusCode 404
-        //        }
-        //    getLoginResult ()))
     ]
 
-let authorsApp : apiType =
+let bookstoreApp : apiType =
     choose [
         GET >=> fun (next : HttpFunc) (ctx : HttpContext) ->
             task {
@@ -171,10 +160,10 @@ let testApp : apiType =
 
 
 
-let apiRouter : Giraffe.Core.HttpFunc -> AspNetCore.Http.HttpContext -> Giraffe.Core.HttpFuncResult =
+let apiRouter : apiType =
     choose [
         route "/api/login"    >=> userApp
-        route "/api/authors"    >=> authorsApp
+        route "/api/authors"    >=> bookstoreApp
         route "/api/test" >=> testApp
     ]
 
