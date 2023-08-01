@@ -6,6 +6,9 @@ open Saturn
 
 open Shared
 open System
+open Microsoft
+open Giraffe
+open Microsoft.AspNetCore.Http
 
 module Storage =
     let authors = ResizeArray()
@@ -70,21 +73,114 @@ let userApi =
             
     }
 
-//let webApp =
+type apiType = Giraffe.Core.HttpFunc -> AspNetCore.Http.HttpContext -> Giraffe.Core.HttpFuncResult
+
+//let bookstoreApp : Giraffe.Core.HttpFunc -> AspNetCore.Http.HttpContext -> Giraffe.Core.HttpFuncResult =
 //    Remoting.createApi ()
 //    |> Remoting.withRouteBuilder Route.builder
 //    |> Remoting.fromValue bookstoreApi
 //    |> Remoting.buildHttpHandler
 
+//let bookstoreApp : HttpHandler =
+//    choose [
+//        GET "/api/books" >=> fun _ ->
+//            async {
+//                let! books = bookstoreApi.getBooks ()
+//                return (Ok books)
+//            }
+//        POST "/api/books" >=> fun ctx ->
+//            let book = ctx.TryExtractJson<Book>()
+//            async {
+//                let! addedBook = bookstoreApi.addBook book
+//                match addedBook book with
+//                | Ok () -> return OK book
+//                | Error e -> return BadRequest e
+//            }
+//        GET "/api/authors/{id}" >=> fun (ctx: HttpContext) ->
+//            let id = ctx.RouteParams.["id"]
+//            async {
+//                try
+//                    let! author = bookstoreApi.getAuthor (Guid.Parse(id))
+//                    match author book with
+//                    | Author _ -> return OK author
+//                    | Error e -> return NotFound
+//                with
+//                | :? System.Collections.Generic.KeyNotFoundException ->
+//                    return NotFound
+//            }
+
+//        GET "/api/authors" >=> fun _ ->
+//            async {
+//                let! authors = bookstoreApi.getAuthors ()
+//                return Ok authors
+//            }
+//        POST "/api/authors" >=> fun ctx ->
+//            let author = ctx.TryExtractJson<Book>()
+//            async {
+//                let! addedBook = bookstoreApi.addBook book
+//                match addedBook book with
+//                | Ok () -> return OK book
+//                | Error e -> return BadRequest e
+//            }
+//    ]
+
 let userApp =
-    Remoting.createApi ()
-    |> Remoting.withRouteBuilder Route.builder
-    |> Remoting.fromValue userApi
-    |> Remoting.buildHttpHandler
+    choose [
+        GET >=> (json { Username = "admin"; AccessToken = AccessToken (Guid.NewGuid().ToString()) })
+        POST >=> fun (next : HttpFunc) (ctx : HttpContext) ->
+            task {
+                let! user = ctx.BindJsonAsync<User>()
+                let! result = Async.StartAsTask (userApi.login (user.Username, "admin"))
+                return! Successful.OK result next ctx
+            }
+        //POST >=> (bindJson<User> (fun user ->
+        //    let getLoginResult () =
+        //        async {
+        //            do! Async.Sleep 1500
+        //            match user.Username with
+        //            | "admin" ->
+        //                let accessToken = Guid.NewGuid().ToString()
+        //                return LoggedIn { Username = user.Username; AccessToken = AccessToken accessToken }; setStatusCode 200
+        //            | _ -> return UsernameOrPasswordIncorrect; setStatusCode 404
+        //        }
+        //    getLoginResult ()))
+    ]
+
+let authorsApp : apiType =
+    choose [
+        GET >=> fun (next : HttpFunc) (ctx : HttpContext) ->
+            task {
+                let! result = Async.StartAsTask (bookstoreApi.getAuthors ())
+                return! Successful.OK result next ctx
+            }
+            //json (Async.RunSynchronously (bookstoreApi.getAuthors (), 10000))
+            //json ("Not working")
+        ]
+
+let testApp : apiType =
+    choose [
+        GET >=>
+            json ("It is a test")
+        ]
+
+//let userApp : Giraffe.Core.HttpFunc -> AspNetCore.Http.HttpContext -> Giraffe.Core.HttpFuncResult =
+//    Remoting.createApi ()
+//    |> Remoting.withRouteBuilder Route.builder
+//    |> Remoting.fromValue userApi
+//    |> Remoting.buildHttpHandler
+
+
+
+let apiRouter : Giraffe.Core.HttpFunc -> AspNetCore.Http.HttpContext -> Giraffe.Core.HttpFuncResult =
+    choose [
+        route "/api/login"    >=> userApp
+        route "/api/authors"    >=> authorsApp
+        route "/api/test" >=> testApp
+    ]
 
 let app =
     application {
-        use_router userApp
+        use_router apiRouter
         memory_cache
         use_static "public"
         use_gzip
@@ -94,50 +190,3 @@ let app =
 let main _ =
     run app
     0
-
-//module Storage =
-//    let todos = ResizeArray()
-
-//    let addTodo (todo: Todo) =
-//        if Todo.isValid todo.Description then
-//            todos.Add todo
-//            Ok()
-//        else
-//            Error "Invalid todo"
-
-//    do
-//        addTodo (Todo.create "Create new SAFE project")
-//        |> ignore
-
-//        addTodo (Todo.create "Write your app") |> ignore
-//        addTodo (Todo.create "Ship it !!!") |> ignore
-
-//let todosApi =
-//    { getTodos = fun () -> async { return Storage.todos |> List.ofSeq }
-//      addTodo =
-//        fun todo ->
-//            async {
-//                return
-//                    match Storage.addTodo todo with
-//                    | Ok () -> todo
-//                    | Error e -> failwith e
-//            } }
-
-//let webApp =
-//    Remoting.createApi ()
-//    |> Remoting.withRouteBuilder Route.builder
-//    |> Remoting.fromValue todosApi
-//    |> Remoting.buildHttpHandler
-
-//let app =
-//    application {
-//        use_router webApp
-//        memory_cache
-//        use_static "public"
-//        use_gzip
-//    }
-
-//[<EntryPoint>]
-//let main _ =
-//    run app
-//    0
