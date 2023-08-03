@@ -1,14 +1,16 @@
 module Server
 
-open Fable.Remoting.Server
-open Fable.Remoting.Giraffe
 open Saturn
-
 open Shared
 open System
 open Microsoft
 open Giraffe
 open Microsoft.AspNetCore.Http
+open Fable.Remoting.Server
+open Fable.Remoting.Giraffe
+
+open Microsoft.AspNetCore.Builder
+open Microsoft.Extensions.DependencyInjection
 
 module Storage =
     let authors = ResizeArray()
@@ -37,18 +39,8 @@ module Storage =
     //    addBook (Book.create ("Pan Tadeusz", Author.create ("Adam", "Mickiewicz"))) |> ignore
     //    addBook (Book.create ("Kordian", Author.create ("Juliusz", "Słowacki"))) |> ignore
 
-let bookstoreApi =
-    { getBooks = fun () -> async { return Storage.books |> List.ofSeq }
-      addBook =
-        fun book ->
-            async {
-                return
-                    match Storage.addBook book with
-                    | Ok () -> book
-                    | Error e -> failwith e
-            }
-      getAuthor = fun id -> async { return Storage.authors |> Seq.find (fun (author: Author) -> author.Id = id) }
-      getAuthors = fun () -> async { return Storage.authors |> List.ofSeq }
+let authorsApi : IAuthorsApi =
+    { getAuthors = fun () -> async { return Storage.authors |> List.ofSeq }
       addAuthor =
         fun author ->
             async {
@@ -58,6 +50,25 @@ let bookstoreApi =
                     | Error e -> failwith e
             }
             }
+
+let booksApi =
+    { getBooks = fun () -> async { return Storage.books |> List.ofSeq }
+      addBook =
+        fun book ->
+            async {
+                return
+                    match Storage.addBook book with
+                    | Ok () -> book
+                    | Error e -> failwith e
+            }
+     }
+
+
+let bookstoreIndexApi =
+    {
+        getAuthor = fun id -> async { return Storage.authors |> Seq.find (fun (author: Author) -> author.Id = id) }
+        getBook = fun id -> async { return Storage.books |> Seq.find (fun (book: Book) -> book.Id = id) }
+    }
 
 let userApi =
     { login =
@@ -71,105 +82,35 @@ let userApi =
                     return LoggedIn { Username = user; AccessToken = AccessToken accessToken }
                 | _, _ -> return UsernameOrPasswordIncorrect
             }
-            
+      test = fun () ->
+        async {
+            do! Async.Sleep 1000
+            return "Test"
+        }
     }
 
-type apiType = Giraffe.Core.HttpFunc -> AspNetCore.Http.HttpContext -> Giraffe.Core.HttpFuncResult
+let serverApi =
+    {
+        getBooks = booksApi.getBooks
+        getBook = bookstoreIndexApi.getBook
+        addBook = booksApi.addBook
+        getAuthor = bookstoreIndexApi.getAuthor
+        getAuthors = authorsApi.getAuthors
+        addAuthor = authorsApi.addAuthor
+        login = userApi.login
+    }
 
-//let bookstoreApp : Giraffe.Core.HttpFunc -> AspNetCore.Http.HttpContext -> Giraffe.Core.HttpFuncResult =
-//    Remoting.createApi ()
-//    |> Remoting.withRouteBuilder Route.builder
-//    |> Remoting.fromValue bookstoreApi
-//    |> Remoting.buildHttpHandler
+//type apiType = Giraffe.Core.HttpFunc -> AspNetCore.Http.HttpContext -> Giraffe.Core.HttpFuncResult
 
-//let bookstoreApp : HttpHandler =
-//    choose [
-//        GET "/api/books" >=> fun _ ->
-//            async {
-//                let! books = bookstoreApi.getBooks ()
-//                return (Ok books)
-//            }
-//        POST "/api/books" >=> fun ctx ->
-//            let book = ctx.TryExtractJson<Book>()
-//            async {
-//                let! addedBook = bookstoreApi.addBook book
-//                match addedBook book with
-//                | Ok () -> return OK book
-//                | Error e -> return BadRequest e
-//            }
-//        GET "/api/authors/{id}" >=> fun (ctx: HttpContext) ->
-//            let id = ctx.RouteParams.["id"]
-//            async {
-//                try
-//                    let! author = bookstoreApi.getAuthor (Guid.Parse(id))
-//                    match author book with
-//                    | Author _ -> return OK author
-//                    | Error e -> return NotFound
-//                with
-//                | :? System.Collections.Generic.KeyNotFoundException ->
-//                    return NotFound
-//            }
-
-//        GET "/api/authors" >=> fun _ ->
-//            async {
-//                let! authors = bookstoreApi.getAuthors ()
-//                return Ok authors
-//            }
-//        POST "/api/authors" >=> fun ctx ->
-//            let author = ctx.TryExtractJson<Book>()
-//            async {
-//                let! addedBook = bookstoreApi.addBook book
-//                match addedBook book with
-//                | Ok () -> return OK book
-//                | Error e -> return BadRequest e
-//            }
-//    ]
-
-let userApp =
-    choose [
-        POST >=> fun (next : HttpFunc) (ctx : HttpContext) ->
-            task {
-                let! loginRequest = ctx.BindJsonAsync<LoginRequest>()
-                let! result = Async.StartAsTask (userApi.login loginRequest)
-                return! Successful.OK result next ctx
-            }
-    ]
-
-let bookstoreApp : apiType =
-    choose [
-        GET >=> fun (next : HttpFunc) (ctx : HttpContext) ->
-            task {
-                let! result = Async.StartAsTask (bookstoreApi.getAuthors ())
-                return! Successful.OK result next ctx
-            }
-            //json (Async.RunSynchronously (bookstoreApi.getAuthors (), 10000))
-            //json ("Not working")
-        ]
-
-let testApp : apiType =
-    choose [
-        GET >=>
-            json ("It is a test")
-        ]
-
-//let userApp : Giraffe.Core.HttpFunc -> AspNetCore.Http.HttpContext -> Giraffe.Core.HttpFuncResult =
-//    Remoting.createApi ()
-//    |> Remoting.withRouteBuilder Route.builder
-//    |> Remoting.fromValue userApi
-//    |> Remoting.buildHttpHandler
-
-
-
-let apiRouter : apiType =
-    choose [
-        route "/api/login"    >=> userApp
-        route "/api/authors"    >=> bookstoreApp
-        route "/api/test" >=> testApp
-    ]
+let bookstoreApp =
+    Remoting.createApi ()
+    |> Remoting.withRouteBuilder Shared.Route.builder
+    |> Remoting.fromValue serverApi
+    |> Remoting.buildHttpHandler
 
 let app =
     application {
-        use_router apiRouter
+        use_router bookstoreApp
         memory_cache
         use_static "public"
         use_gzip
@@ -179,3 +120,11 @@ let app =
 let main _ =
     run app
     0
+
+
+//let apiRouter : apiType =
+//    choose [
+//        route "/api/login"    >=> userApp
+//        route "/api/authors"    >=> bookstoreApp
+//        route "/api/test" >=> testApp
+//    ]

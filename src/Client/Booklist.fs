@@ -22,7 +22,7 @@ type Msg =
 let bookstoreApi =
     Remoting.createApi ()
     |> Remoting.withRouteBuilder Route.builder
-    |> Remoting.buildProxy<IBookstoreApi>
+    |> Remoting.buildProxy<IServerApi>
 
 let init () : Model * Cmd<Msg> =
     let model = { Books = []; Authors = []; TitleInput = ""; AuthorId = "" }

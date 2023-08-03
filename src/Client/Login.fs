@@ -29,7 +29,7 @@ let (|UserLoggedIn|_|) = function
 let userApi =
     Remoting.createApi ()
     |> Remoting.withRouteBuilder Route.builder
-    |> Remoting.buildProxy<IUserApi>
+    |> Remoting.buildProxy<IServerApi>
 
 let init() =
     { Username = ""
@@ -45,7 +45,7 @@ let update (msg: Msg) (model: Model) =
     | LoginStarted ->
         let nextModel = { model with LoginProcess = InProgress }
         let cmd = async {
-            let! loginResult = userApi.login (model.Username, model.Password)
+            let! loginResult = userApi.login ({Username = model.Username; Password = model.Password})
             return GotLoginResult loginResult
         }
         nextModel, Cmd.OfAsync.result cmd, Intent.DoNothing

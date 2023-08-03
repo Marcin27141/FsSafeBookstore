@@ -29,12 +29,19 @@ module Route =
     let builder typeName methodName =
         sprintf "/api/%s/%s" typeName methodName
 
-type IBookstoreApi =
-    { getBooks: unit -> Async<Book list>
-      addBook: Book -> Async<Book>
-      getAuthor: Guid -> Async<Author>
-      getAuthors: unit -> Async<Author list>
+type IAuthorsApi =
+    { getAuthors: unit -> Async<Author list>
       addAuthor: Author -> Async<Author> }
+
+type IBooksApi =
+    { getBooks: unit -> Async<Book list>
+      addBook: Book -> Async<Book> }
+
+type IBookstoreIndexApi =
+    {
+        getAuthor: Guid -> Async<Author>
+        getBook: Guid -> Async<Book>
+    }
 
 type AccessToken = AccessToken of string
 
@@ -57,22 +64,15 @@ type LoginProcess =
     | Finished of LoginResult
 
 type IUserApi =
-    { login: LoginRequest -> Async<LoginResult> }
+    { login: LoginRequest -> Async<LoginResult>
+      test: unit -> Async<string> }
 
-//type Todo = { Id: Guid; Description: string }
-
-//module Todo =
-//    let isValid (description: string) =
-//        String.IsNullOrWhiteSpace description |> not
-
-//    let create (description: string) =
-//        { Id = Guid.NewGuid()
-//          Description = description }
-
-//module Route =
-//    let builder typeName methodName =
-//        sprintf "/api/%s/%s" typeName methodName
-
-//type ITodosApi =
-//    { getTodos: unit -> Async<Todo list>
-//      addTodo: Todo -> Async<Todo> }
+type IServerApi =
+    { getBooks: unit -> Async<Book list>
+      getBook: Guid -> Async<Book>
+      addBook: Book -> Async<Book>
+      getAuthor: Guid -> Async<Author>
+      getAuthors: unit -> Async<Author list>
+      addAuthor: Author -> Async<Author>
+      login: LoginRequest -> Async<LoginResult>
+    }
