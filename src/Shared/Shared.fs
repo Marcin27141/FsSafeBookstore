@@ -64,11 +64,11 @@ type LoginProcess =
     | Finished of LoginResult
 
 type IUserApi =
-    { login: LoginRequest -> Async<LoginResult>
-      test: unit -> Async<string> }
+    { login: LoginRequest -> Async<LoginResult> }
 
 type IServerApi =
-    { getBooks: unit -> Async<Book list>
+    {
+      getBooks: unit -> Async<Book list>
       getBook: Guid -> Async<Book>
       addBook: Book -> Async<Book>
       getAuthor: Guid -> Async<Author>

@@ -3,14 +3,8 @@ module Server
 open Saturn
 open Shared
 open System
-open Microsoft
-open Giraffe
-open Microsoft.AspNetCore.Http
 open Fable.Remoting.Server
 open Fable.Remoting.Giraffe
-
-open Microsoft.AspNetCore.Builder
-open Microsoft.Extensions.DependencyInjection
 
 module Storage =
     let authors = ResizeArray()
@@ -82,11 +76,6 @@ let userApi =
                     return LoggedIn { Username = user; AccessToken = AccessToken accessToken }
                 | _, _ -> return UsernameOrPasswordIncorrect
             }
-      test = fun () ->
-        async {
-            do! Async.Sleep 1000
-            return "Test"
-        }
     }
 
 let serverApi =

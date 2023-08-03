@@ -6,6 +6,7 @@ open Fable.Remoting.Client
 open Elmish
 open Feliz
 open Feliz.Bulma
+open ApiProxy
 
 type Model = { Authors: Author list; FirstNameInput: string; LastNameInput: string }
 
@@ -16,10 +17,7 @@ type Msg =
     | AddAuthor
     | AddedAuthor of Author
 
-let bookstoreApi =
-    Remoting.createApi ()
-    |> Remoting.withRouteBuilder Route.builder
-    |> Remoting.buildProxy<IServerApi>
+let bookstoreApi = getApiProxy ()
 
 let init () : Model * Cmd<Msg> =
     let model = { Authors = []; FirstNameInput = ""; LastNameInput = "" }

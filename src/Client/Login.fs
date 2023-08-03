@@ -5,6 +5,7 @@ open Elmish
 open Feliz
 open Shared
 open Fable.Remoting.Client
+open ApiProxy
 
 type Model =
     { Username: string
@@ -26,10 +27,7 @@ let (|UserLoggedIn|_|) = function
     | Msg.GotLoginResult (LoggedIn user) -> Some user
     | _ -> None
 
-let userApi =
-    Remoting.createApi ()
-    |> Remoting.withRouteBuilder Route.builder
-    |> Remoting.buildProxy<IServerApi>
+let userApi = getApiProxy ()
 
 let init() =
     { Username = ""

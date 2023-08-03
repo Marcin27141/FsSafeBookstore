@@ -7,6 +7,7 @@ open Shared
 open Fable.Remoting.Client
 open Elmish
 open System
+open ApiProxy
 
 type Model = { Books: Book list; Authors: Author list; TitleInput: string; AuthorId: string }
 
@@ -19,10 +20,7 @@ type Msg =
     | AddedBook of Book
     | GetAuthor
 
-let bookstoreApi =
-    Remoting.createApi ()
-    |> Remoting.withRouteBuilder Route.builder
-    |> Remoting.buildProxy<IServerApi>
+let bookstoreApi = getApiProxy ()
 
 let init () : Model * Cmd<Msg> =
     let model = { Books = []; Authors = []; TitleInput = ""; AuthorId = "" }
