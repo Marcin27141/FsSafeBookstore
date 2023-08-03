@@ -19,6 +19,7 @@ type Msg =
     | AddBook of Author
     | AddedBook of Book
     | GetAuthor
+    | ShowBookDetails of Book
 
 let bookstoreApi = getApiProxy ()
 
@@ -56,7 +57,8 @@ let update (msg: Msg) (model: Model) =
     | AddedBook book ->
         let newModel = { model with Books = model.Books @ [ book ] }
         newModel, Cmd.none
-
+    | ShowBookDetails book ->
+        model, Cmd.none
 
 let authorDropdownOptions (authors: Author list) =
     authors
@@ -66,13 +68,23 @@ let authorDropdownOptions (authors: Author list) =
             prop.text (sprintf "%s %s" author.FirstName author.LastName)
         ])
 
+
+
 let render (model: Model) (dispatch: Msg -> unit) =
-    Bulma.box [
+    Bulma.box [    
         Bulma.content [
-            Html.ol [
-                for book in model.Books do
-                    Html.li [ prop.text book.Title ]
-            ]
+            let booksTable =
+                [for book in model.Books do
+                    Html.tr [
+                        Html.td [ Html.text book.Title ]
+                        Html.td [ Html.button [
+                            prop.text "Show"
+                            prop.onClick (fun _ -> dispatch (ShowBookDetails book))
+                            ]
+                        ]
+                    ]
+                ]
+            Bulma.table booksTable
         ]
         Bulma.field.div [
             field.isGrouped

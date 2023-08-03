@@ -8,6 +8,7 @@
         <Compile Include="ApiProxy.fs" />
         <Compile Include="UrlListener.fs" />
         <Compile Include="CreateAuthor.fs" />
+        <Compile Include="BookDetails.fs" />
         <Compile Include="Booklist.fs" />
         <None Include="index.html" />
         <None Include="paket.references" />
