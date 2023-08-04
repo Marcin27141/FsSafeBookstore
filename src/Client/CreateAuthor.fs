@@ -7,6 +7,7 @@ open Elmish
 open Feliz
 open Feliz.Bulma
 open ApiProxy
+open Feliz.Router
 
 type Model = { Authors: Author list; FirstNameInput: string; LastNameInput: string }
 
@@ -16,6 +17,7 @@ type Msg =
     | SetLastNameInput of string
     | AddAuthor
     | AddedAuthor of Author
+    | Return
 
 let bookstoreApi = getApiProxy ()
 
@@ -42,42 +44,63 @@ let update (msg: Msg) (model: Model) =
         newModel, cmd 
     | AddedAuthor author ->
         let newModel = { model with Authors = model.Authors @ [ author ] }
-        newModel, Cmd.none    
+        newModel, Cmd.none
+    | Return -> model, Cmd.navigate("booklist", "books")
 
 let render (model: Model) (dispatch: Msg -> unit) =
-    Bulma.box [
-        Bulma.content [
-            Html.ol [
-                for author in model.Authors do
-                    Html.li [ prop.text (sprintf "%s %s" author.FirstName author.LastName) ]
-            ]
-        ]
-        Bulma.field.div [
-            field.isGrouped
-            prop.children [
-                Bulma.control.p [
-                    control.isExpanded
+    Html.div [
+        prop.children [
+            Bulma.box [
+                Bulma.content [
+                    Html.ol [
+                        for author in model.Authors do
+                            Html.li [ prop.text (sprintf "%s %s" author.FirstName author.LastName) ]
+                    ]
+                ]
+                Bulma.field.div [
+                    field.isGrouped
                     prop.children [
-                        Bulma.input.text [
-                            prop.value model.FirstNameInput
-                            prop.placeholder "Author's first name"
-                            prop.onChange (fun x -> SetFirstNameInput x |> dispatch)
+                        Bulma.control.p [
+                            control.isExpanded
+                            prop.children [
+                                Bulma.input.text [
+                                    prop.value model.FirstNameInput
+                                    prop.placeholder "Author's first name"
+                                    prop.onChange (fun x -> SetFirstNameInput x |> dispatch)
+                                ]
+                                Bulma.input.text [
+                                    prop.value model.LastNameInput
+                                    prop.placeholder "Author's last name"
+                                    prop.onChange (fun x -> SetLastNameInput x |> dispatch)
+                                ]
+                            ]
                         ]
-                        Bulma.input.text [
-                            prop.value model.LastNameInput
-                            prop.placeholder "Author's last name"
-                            prop.onChange (fun x -> SetLastNameInput x |> dispatch)
+                        Bulma.control.p [
+                            Bulma.button.a [
+                                color.isPrimary
+                                prop.disabled (Author.isValid(model.FirstNameInput, model.LastNameInput) |> not)
+                                prop.onClick (fun _ -> dispatch AddAuthor)
+                                prop.text "Add"
+                            ]
                         ]
                     ]
                 ]
-                Bulma.control.p [
+            ]
+            Html.div [
+                prop.style [
+                    style.margin.auto
+                    style.textAlign.center
+                    style.width (length.percent 100)
+                    style.marginTop 30
+                ]
+                prop.children [
                     Bulma.button.a [
-                        color.isPrimary
-                        prop.disabled (Author.isValid(model.FirstNameInput, model.LastNameInput) |> not)
-                        prop.onClick (fun _ -> dispatch AddAuthor)
-                        prop.text "Add"
+                        color.isInfo
+                        prop.text "Return"
+                        prop.onClick (fun _ -> dispatch Return)
                     ]
                 ]
             ]
         ]
     ]
+    

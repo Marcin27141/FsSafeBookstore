@@ -8,6 +8,7 @@ open Fable.Remoting.Client
 open Elmish
 open System
 open ApiProxy
+open Feliz.Router
 
 type Model = { Books: Book list; Authors: Author list; TitleInput: string; AuthorId: string }
 
@@ -25,6 +26,7 @@ type Msg =
     | AddedBook of Book
     | GetAuthor
     | ShowBookDetails of Book
+    | CreateAuthor
 
 let bookstoreApi = getApiProxy ()
 
@@ -63,7 +65,10 @@ let update (msg: Msg) (model: Model) =
         let newModel = { model with Books = model.Books @ [ book ] }
         newModel, Cmd.none, Intent.DoNothing
     | ShowBookDetails book ->
-        model, Cmd.none, Intent.ShowBookDetails book
+        //model, Cmd.none, Intent.ShowBookDetails book
+        model, Cmd.navigate("booklist", "details", book.Id.ToString()), Intent.DoNothing
+    | CreateAuthor ->
+        model, Cmd.navigate("booklist", "authors"), Intent.DoNothing
 
 let authorDropdownOptions (authors: Author list) =
     authors
@@ -76,46 +81,70 @@ let authorDropdownOptions (authors: Author list) =
 
 
 let render (model: Model) (dispatch: Msg -> unit) =
-    Bulma.box [    
-        Bulma.content [
-            let booksTable =
-                [for book in model.Books do
-                    Html.tr [
-                        Html.td [ Html.text book.Title ]
-                        Html.td [ Html.button [
-                            prop.text "Show"
-                            prop.onClick (fun _ -> dispatch (ShowBookDetails book))
+    Html.div [
+        prop.children [
+            Bulma.box [
+                Bulma.content [
+                    let booksTable =
+                        [ for book in model.Books -> 
+                            Html.tr [
+                                Html.td [ Html.text book.Title ]
+                                Html.td [
+                                    Html.button [
+                                        prop.text "Show"
+                                        prop.onClick (fun _ -> dispatch (ShowBookDetails book))
+                                    ]
+                                ]
+                            ]
+                        ]
+                    Bulma.table booksTable
+                ]
+                Bulma.field.div [
+                    field.isGrouped
+                    prop.children [
+                        Bulma.control.p [
+                            control.isExpanded
+                            prop.children [
+                                Bulma.input.text [
+                                    prop.value model.TitleInput
+                                    prop.placeholder "Specify book title"
+                                    prop.onChange (fun x -> SetTitleInput x |> dispatch)
+                                ]
+                                Bulma.select [
+                                    prop.onChange (fun id -> SetAuthorId id |> dispatch)
+                                    prop.children (authorDropdownOptions model.Authors)
+                                ]
+                            ]
+                        ]
+                        Bulma.control.p [
+                            Bulma.button.a [
+                                color.isPrimary
+                                prop.disabled (String.IsNullOrEmpty model.TitleInput || String.IsNullOrEmpty model.AuthorId)
+                                prop.onClick (fun _ -> dispatch GetAuthor)
+                                prop.text "Add"
                             ]
                         ]
                     ]
                 ]
-            Bulma.table booksTable
-        ]
-        Bulma.field.div [
-            field.isGrouped
-            prop.children [
-                Bulma.control.p [
-                    control.isExpanded
-                    prop.children [
-                        Bulma.input.text [
-                            prop.value model.TitleInput
-                            prop.placeholder "Specify book title"
-                            prop.onChange (fun x -> SetTitleInput x |> dispatch)
-                        ]
-                        Bulma.select [
-                            prop.onChange (fun id -> SetAuthorId id |> dispatch)
-                            prop.children (authorDropdownOptions model.Authors)
-                        ]
-                    ]
+            ]
+            Html.div [
+                prop.style [
+                    style.margin.auto
+                    style.textAlign.center
+                    style.width (length.percent 100)
+                    style.marginTop 30
                 ]
-                Bulma.control.p [
+                prop.children [
                     Bulma.button.a [
-                        color.isPrimary
-                        prop.disabled (String.IsNullOrEmpty model.TitleInput || String.IsNullOrEmpty model.AuthorId)
-                        prop.onClick (fun _ -> dispatch GetAuthor)
-                        prop.text "Add"
+                        color.isInfo
+                        prop.text "Create author"
+                        prop.onClick (fun _ -> dispatch CreateAuthor)
                     ]
                 ]
             ]
         ]
     ]
+
+
+
+

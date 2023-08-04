@@ -6,6 +6,7 @@ open Shared
 open Feliz
 open Feliz.Router
 open Fable
+open System
 
 [<RequireQualifiedAccess>]
 type Page =
@@ -28,16 +29,20 @@ type Intent =
     | DoNothing
 
 let init(user: User) =
-    { User = user; CurrentPage = Page.Home; CurrentUrl = Router.currentUrl() }, Cmd.none
+    let path = ["bookstore"]
+    { User = user; CurrentPage = Page.Home; CurrentUrl = path}, Cmd.none
 
 let update (msg: Msg) (model: Model) =
     match msg, model.CurrentPage with
     | UrlChanged url, _ ->
+        Console.WriteLine($"outer url: {url}")
         let getModelWithPageAndCmd =
             match url with
             | [ "booklist" ] ->
                 let indexModel, indexCmd = Index.init()
                 { model with CurrentPage = Page.Index indexModel; },Cmd.map IndexMsg indexCmd
+            | "booklist" :: _ ->
+                model, Cmd.none
             | [] ->
                 let homeModel, homeCmd = init (model.User)
                 homeModel, homeCmd
