@@ -63,17 +63,28 @@ let centered (children: ReactElement list) =
     ]
 
 let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
-    centered [
-        Html.h1 [
-            Html.strong (model.User.Username.ToUpper())
+    Html.div [
+        centered [
+            Html.div [
+                Html.h1 [
+                    Html.strong (model.User.Username.ToUpper())
+                ]
+
+                Html.button [
+                    prop.className "button is-info"
+                    prop.onClick (fun _ -> dispatch Logout)
+                    prop.text "Logout"
+                ]
+            ]
         ]
 
-        Html.button [
-            prop.className "button is-info"
-            prop.onClick (fun _ -> dispatch Logout)
-            prop.text "Logout"
+        Html.a [
+                prop.text "Booklist"
+                prop.href (Router.format "booklist")
+                prop.style [ style.margin 5 ]
         ]
     ]
+    
 
 let render (model: Model) (dispatch: Msg -> unit) =
     Html.div [
