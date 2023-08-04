@@ -32,12 +32,12 @@ let init () : Model * Cmd<Msg> =
 let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     match model.CurrentPage, msg with
     | Page.BookList bookModel, BookMsg bookMsg ->
-        match bookMsg with
-        | Booklist.Msg.ShowBookDetails book ->
-            model, Cmd.ofMsg (SwitchToBookDetails book)
-        | _ ->
-            let bookModel, cmd = Booklist.update bookMsg bookModel
-            { model with CurrentPage = Page.BookList bookModel }, Cmd.map BookMsg cmd
+        let updatedModel, cmd, intent = Booklist.update bookMsg bookModel
+        match intent with
+        | Booklist.Intent.ShowBookDetails book ->
+            { model with CurrentPage = Page.BookList updatedModel }, Cmd.ofMsg (SwitchToBookDetails book)
+        | Booklist.Intent.DoNothing ->
+            { model with CurrentPage = Page.BookList updatedModel }, Cmd.map BookMsg cmd
     | Page.CreateAuthor authorModel, AuthorMsg authorMsg ->
         let authorModel, cmd = CreateAuthor.update authorMsg authorModel
         { model with CurrentPage = Page.CreateAuthor authorModel }, Cmd.map AuthorMsg cmd
@@ -66,6 +66,17 @@ let navBrand =
         ]
     ]
 
+let centered (children: ReactElement list) =
+    Html.div [
+        prop.style [
+            style.margin.auto
+            style.textAlign.center
+            style.width (length.percent 100)
+        ]
+
+        prop.children children
+    ]
+
 let render (model:Model) (dispatch: Msg -> unit) =
     Bulma.hero [
         hero.isFullHeight
@@ -91,6 +102,20 @@ let render (model:Model) (dispatch: Msg -> unit) =
                                 text.hasTextCentered
                                 prop.text "FsSafeApplication"
                             ]
+                            match model.CurrentPage with
+                            | Page.BookList model -> Booklist.render model (Msg.BookMsg >> dispatch)
+                            | Page.CreateAuthor model -> CreateAuthor.render model (Msg.AuthorMsg >> dispatch)
+                            | Page.BookDetails model -> BookDetails.render model (Msg.BookDetailsMsg >> dispatch)
+                        ]
+                    ]
+                    Html.div [
+                        prop.style [
+                            style.margin.auto
+                            style.textAlign.center
+                            style.width (length.percent 100)
+                        ]
+
+                        prop.children [
                             Bulma.button.a [
                                 color.isInfo
                                 let getMsgAndText =
@@ -101,13 +126,9 @@ let render (model:Model) (dispatch: Msg -> unit) =
                                 prop.onClick (fun _ -> dispatch msg)
                                 prop.text text
                             ]
-                            match model.CurrentPage with
-                            | Page.BookList model -> Booklist.render model (Msg.BookMsg >> dispatch)
-                            | Page.CreateAuthor model -> CreateAuthor.render model (Msg.AuthorMsg >> dispatch)
-                            | Page.BookDetails model -> BookDetails.render model (Msg.BookDetailsMsg >> dispatch)
                         ]
                     ]
                 ]
             ]
         ]
-    ]
+        ]

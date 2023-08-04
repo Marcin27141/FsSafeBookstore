@@ -11,6 +11,11 @@ open ApiProxy
 
 type Model = { Books: Book list; Authors: Author list; TitleInput: string; AuthorId: string }
 
+[<RequireQualifiedAccess>]
+type Intent =
+    | ShowBookDetails of Book
+    | DoNothing
+
 type Msg =
     | GotBooks of Book list
     | GotAuthors of Author list
@@ -35,30 +40,30 @@ let update (msg: Msg) (model: Model) =
     match msg with
     | GotAuthors authors ->
         let newModel = { model with Authors = authors }
-        newModel, Cmd.none
+        newModel, Cmd.none, Intent.DoNothing
     | GotBooks books ->
         let newModel = { model with Books = books }
-        newModel, Cmd.none
+        newModel, Cmd.none, Intent.DoNothing
     | SetTitleInput value ->
         let newModel = { model with TitleInput = value }
-        newModel, Cmd.none
+        newModel, Cmd.none, Intent.DoNothing
     | SetAuthorId value ->
         let newModel = { model with AuthorId = value }
-        newModel, Cmd.none
+        newModel, Cmd.none, Intent.DoNothing
     | GetAuthor ->
         let cmd = Cmd.OfAsync.perform bookstoreApi.getAuthor (Guid.Parse(model.AuthorId)) AddBook
         let newModel = { model with AuthorId = "" }
-        newModel, cmd 
+        newModel, cmd , Intent.DoNothing
     | AddBook author ->
         let book = Book.create (model.TitleInput, author)
         let cmd = Cmd.OfAsync.perform bookstoreApi.addBook book AddedBook
         let newModel = { model with TitleInput = "" }
-        newModel, cmd 
+        newModel, cmd, Intent.DoNothing
     | AddedBook book ->
         let newModel = { model with Books = model.Books @ [ book ] }
-        newModel, Cmd.none
+        newModel, Cmd.none, Intent.DoNothing
     | ShowBookDetails book ->
-        model, Cmd.none
+        model, Cmd.none, Intent.ShowBookDetails book
 
 let authorDropdownOptions (authors: Author list) =
     authors

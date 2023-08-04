@@ -21,5 +21,16 @@ let update (msg: Msg) (model: Model) =
     | Return -> model, Cmd.none
 
 let render (model: Model) (dispatch: Msg -> unit) =
-    //Html.h1 (sprintf "Title: %s" model.Book.Title)
-    Html.h1 (sprintf "Author: %s %s" model.Book.Author.FirstName model.Book.Author.LastName)
+    Html.div [
+        prop.style [
+            style.margin.auto
+            style.textAlign.center
+            style.width (length.percent 100)
+        ]
+
+        prop.children [
+            Html.h1 (sprintf "Title: %s" model.Book.Title)
+            Html.h1 (sprintf "Author: %s %s" model.Book.Author.FirstName model.Book.Author.LastName)
+        ]
+    ]
+    
