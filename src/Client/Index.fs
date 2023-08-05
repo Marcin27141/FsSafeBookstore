@@ -9,6 +9,7 @@ open Feliz
 open Feliz.Bulma
 open Feliz.Router
 open ApiProxy
+open UrlType
 
 [<RequireQualifiedAccess>]
 type Page =
@@ -16,7 +17,7 @@ type Page =
     | BookDetails of BookDetails.Model
     | CreateAuthor of CreateAuthor.Model
 
-type Model = { RouterPath: string list; CurrentPage: Page; CurrentUrl: string list }
+type Model = { CurrentPage: Page; CurrentUrl: Url }
 
 type Msg =
     | BookMsg of Booklist.Msg
@@ -25,29 +26,28 @@ type Msg =
     | SwitchToCreateAuthor
     | SwitchToBooklist
     | SwitchToBookDetails of Book
-    | UrlChanged of string list
+    | UrlChanged of Url
     | GotBookForDetails of Book
 
 let bookstoreApi = getApiProxy ()
 
 let init () : Model * Cmd<Msg> =
     let bookModel, bookCmd = Booklist.init()
-    let model = { CurrentPage = Page.BookList bookModel; CurrentUrl = Router.currentUrl(); RouterPath = Router.currentUrl() }
+    let model = { CurrentPage = Page.BookList bookModel; CurrentUrl = parseUrl(Router.currentUrl()) }
     model, Cmd.map BookMsg bookCmd
 
 let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     match model.CurrentPage, msg with
     | _, UrlChanged url ->
-        Console.WriteLine($"inner: {url}")
         let getModelWithPageAndCmd (model : Model) =
             match url with
-            | ["booklist"; "books"] ->
+            | Url.BooklistUrl BooklistUrl.Booklist ->
                 let booklistModel, cmd = Booklist.init ()
                 { model with CurrentPage = Page.BookList booklistModel}, Cmd.map BookMsg cmd
-            | ["booklist"; "authors"] ->
+            | Url.BooklistUrl BooklistUrl.CreateAuthor ->
                 let authorsModel, cmd = CreateAuthor.init ()
                 { model with CurrentPage = Page.CreateAuthor authorsModel }, Cmd.map AuthorMsg cmd
-            | [ "booklist"; "details"; Route.Guid guid ] ->
+            | Url.BooklistUrl (BooklistUrl.BookDetails guid) ->
                 let cmd = async {
                     let! book = bookstoreApi.getBook guid
                     return GotBookForDetails book
@@ -130,7 +130,7 @@ let render (model:Model) (dispatch: Msg -> unit) =
                         column.isOffset3
                         prop.children [
                             React.router [
-                                router.onUrlChanged (UrlChanged >> dispatch)
+                                router.onUrlChanged (parseUrl >> UrlChanged >> dispatch)
                             ]
                             Bulma.title [
                                 text.hasTextCentered

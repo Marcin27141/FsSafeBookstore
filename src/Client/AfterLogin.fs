@@ -7,6 +7,7 @@ open Feliz
 open Feliz.Router
 open Fable
 open System
+open UrlType
 
 [<RequireQualifiedAccess>]
 type Page =
@@ -15,11 +16,11 @@ type Page =
   | NotFound
 
 type Model =
-  { User: User; CurrentPage: Page; CurrentUrl : string list }
+  { User: User; CurrentPage: Page; CurrentUrl : Url }
 
 type Msg =
     | Logout
-    | UrlChanged of string list
+    | UrlChanged of Url
     | IndexMsg of Index.Msg
     | ChangePageToIndex
 
@@ -29,8 +30,7 @@ type Intent =
     | DoNothing
 
 let init(user: User) =
-    let path = ["bookstore"]
-    { User = user; CurrentPage = Page.Home; CurrentUrl = path}, Cmd.none
+    { User = user; CurrentPage = Page.Home; CurrentUrl = parseUrl(Router.currentUrl())}, Cmd.none
 
 let update (msg: Msg) (model: Model) =
     match msg, model.CurrentPage with
@@ -38,13 +38,13 @@ let update (msg: Msg) (model: Model) =
         Console.WriteLine($"outer url: {url}")
         let getModelWithPageAndCmd =
             match url with
-            | "booklist" :: _ ->
+            | Url.BooklistUrl _ ->
                 let indexModel, indexCmd = Index.init()
                 { model with CurrentPage = Page.Index indexModel; },Cmd.map IndexMsg indexCmd
-            | [] ->
+            | Url.AfterLogin ->
                 let homeModel, homeCmd = init (model.User)
                 homeModel, homeCmd
-            | _ -> { model with CurrentPage = Page.NotFound }, Cmd.none
+            | Url.NotFound -> { model with CurrentPage = Page.NotFound }, Cmd.none
         let updatedPage, cmd = getModelWithPageAndCmd
         { updatedPage with CurrentUrl = url}, cmd, Intent.DoNothing
     | Logout, _ -> model, Cmd.none, Intent.LogoutUser model.User
@@ -93,7 +93,7 @@ let render (model: Model) (dispatch: Msg -> unit) =
     Html.div [
         getHomePageContent model dispatch       
         React.router [
-            router.onUrlChanged (UrlChanged >> dispatch)
+            router.onUrlChanged (parseUrl >> UrlChanged >> dispatch)
         ]
         match model.CurrentPage with
         | Page.Home -> Html.none
