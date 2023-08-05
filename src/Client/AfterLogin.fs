@@ -38,11 +38,9 @@ let update (msg: Msg) (model: Model) =
         Console.WriteLine($"outer url: {url}")
         let getModelWithPageAndCmd =
             match url with
-            | [ "booklist" ] ->
+            | "booklist" :: _ ->
                 let indexModel, indexCmd = Index.init()
                 { model with CurrentPage = Page.Index indexModel; },Cmd.map IndexMsg indexCmd
-            | "booklist" :: _ ->
-                model, Cmd.none
             | [] ->
                 let homeModel, homeCmd = init (model.User)
                 homeModel, homeCmd
@@ -85,7 +83,7 @@ let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
 
         Html.a [
                 prop.text "Booklist"
-                prop.href (Router.format "booklist")
+                prop.href (Router.format(["booklist"; "books"]))
                 prop.style [ style.margin 5 ]
         ]
     ]
