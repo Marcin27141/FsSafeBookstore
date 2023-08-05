@@ -9,13 +9,27 @@ open Feliz
 open Feliz.Bulma
 open Feliz.Router
 open ApiProxy
-open UrlType
 
 [<RequireQualifiedAccess>]
 type Page =
+    | Loading
     | BookList of Booklist.Model
     | BookDetails of BookDetails.Model
     | CreateAuthor of CreateAuthor.Model
+    | NotFound
+
+[<RequireQualifiedAccess>]
+type Url =
+  | Booklist
+  | CreateAuthor
+  | BookDetails of Guid
+  | NotFound
+
+let parseUrl = function
+    | [ "books" ] -> Url.Booklist
+    | [ "authors" ] -> Url.CreateAuthor
+    | [ "details"; Route.Guid bookId ] -> Url.BookDetails bookId
+    | _ -> Url.NotFound
 
 type Model = { CurrentPage: Page; CurrentUrl: Url }
 
@@ -23,38 +37,54 @@ type Msg =
     | BookMsg of Booklist.Msg
     | AuthorMsg of CreateAuthor.Msg
     | BookDetailsMsg of BookDetails.Msg
+    | GotBookForInit of Book
     | SwitchToCreateAuthor
     | SwitchToBooklist
     | SwitchToBookDetails of Book
-    | UrlChanged of Url
+    //| UrlChanged of Url
     | GotBookForDetails of Book
 
 let bookstoreApi = getApiProxy ()
 
-let init () : Model * Cmd<Msg> =
-    let bookModel, bookCmd = Booklist.init()
-    let model = { CurrentPage = Page.BookList bookModel; CurrentUrl = parseUrl(Router.currentUrl()) }
-    model, Cmd.map BookMsg bookCmd
+let init (currentUrl: Url) : Model * Cmd<Msg> =
+    match currentUrl with
+    | Url.Booklist ->
+        let model, cmd = Booklist.init ()
+        let newModel = { CurrentUrl = currentUrl; CurrentPage = Page.BookList model}
+        newModel, Cmd.map BookMsg cmd
+    | Url.CreateAuthor ->
+        let model, cmd = CreateAuthor.init ()
+        let newModel = { CurrentUrl = currentUrl; CurrentPage = Page.CreateAuthor model}
+        newModel, Cmd.map AuthorMsg cmd
+    | Url.BookDetails guid ->
+        let cmd = async {
+            let! book = bookstoreApi.getBook guid
+            return GotBookForDetails book
+        }
+        { CurrentUrl = currentUrl; CurrentPage = Page.Loading }, Cmd.OfAsync.result cmd
+    | Url.NotFound ->
+        { CurrentUrl = currentUrl; CurrentPage = Page.NotFound }, Cmd.none
 
 let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     match model.CurrentPage, msg with
-    | _, UrlChanged url ->
-        let getModelWithPageAndCmd (model : Model) =
-            match url with
-            | Url.BooklistUrl BooklistUrl.Booklist ->
-                let booklistModel, cmd = Booklist.init ()
-                { model with CurrentPage = Page.BookList booklistModel}, Cmd.map BookMsg cmd
-            | Url.BooklistUrl BooklistUrl.CreateAuthor ->
-                let authorsModel, cmd = CreateAuthor.init ()
-                { model with CurrentPage = Page.CreateAuthor authorsModel }, Cmd.map AuthorMsg cmd
-            | Url.BooklistUrl (BooklistUrl.BookDetails guid) ->
-                let cmd = async {
-                    let! book = bookstoreApi.getBook guid
-                    return GotBookForDetails book
-                }
-                model, Cmd.OfAsync.result cmd
-            | _ -> model, Cmd.none
-        getModelWithPageAndCmd { model with CurrentUrl = url }
+    //| _, UrlChanged url ->
+    //    let getModelWithPageAndCmd (model : Model) =
+    //        match url with
+    //        | Url.Booklist ->
+    //            let booklistModel, cmd = Booklist.init ()
+    //            { model with CurrentPage = Page.BookList booklistModel}, Cmd.map BookMsg cmd
+    //        | Url.CreateAuthor ->
+    //            let authorsModel, cmd = CreateAuthor.init ()
+    //            { model with CurrentPage = Page.CreateAuthor authorsModel }, Cmd.map AuthorMsg cmd
+    //        | Url.BookDetails guid ->
+    //            let cmd = async {
+    //                let! book = bookstoreApi.getBook guid
+    //                return GotBookForDetails book
+    //            }
+    //            model, Cmd.OfAsync.result cmd
+    //        | Url.NotFound ->
+    //            { model with CurrentPage = Page.NotFound }, Cmd.none
+    //    getModelWithPageAndCmd { model with CurrentUrl = url }
     | _, GotBookForDetails book ->
         let detailsModel, cmd = BookDetails.init book
         { model with CurrentPage = Page.BookDetails detailsModel}, Cmd.map BookDetailsMsg cmd 
@@ -129,17 +159,19 @@ let render (model:Model) (dispatch: Msg -> unit) =
                         column.is6
                         column.isOffset3
                         prop.children [
-                            React.router [
-                                router.onUrlChanged (parseUrl >> UrlChanged >> dispatch)
-                            ]
+                            //React.router [
+                            //    router.onUrlChanged (parseUrl >> UrlChanged >> dispatch)
+                            //]
                             Bulma.title [
                                 text.hasTextCentered
                                 prop.text "FsSafeApplication"
                             ]
                             match model.CurrentPage with
+                            | Page.Loading -> Html.div [ Bulma.pageLoader.isActive ]
                             | Page.BookList model -> Booklist.render model (Msg.BookMsg >> dispatch)
                             | Page.CreateAuthor model -> CreateAuthor.render model (Msg.AuthorMsg >> dispatch)
                             | Page.BookDetails model -> BookDetails.render model (Msg.BookDetailsMsg >> dispatch)
+                            | Page.NotFound -> Html.h1 "Page not found"
                         ]
                     ]
                     Html.div [

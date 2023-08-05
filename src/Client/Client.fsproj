@@ -19,6 +19,7 @@
         <Compile Include="App.fs" />
     </ItemGroup>
     <ItemGroup>
+      <PackageReference Include="Feliz.Bulma.PageLoader" Version="3.0.0" />
       <PackageReference Include="Feliz.Router" Version="3.0.1" />
     </ItemGroup>
     <ItemGroup>

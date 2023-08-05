@@ -7,13 +7,23 @@ open Feliz
 open Feliz.Router
 open Fable
 open System
-open UrlType
 
 [<RequireQualifiedAccess>]
 type Page =
   | Home
   | Index of Index.Model
   | NotFound
+
+[<RequireQualifiedAccess>]
+type Url =
+  | AfterLogin
+  | Booklist of Index.Url
+  | NotFound
+
+let parseUrl = function
+    | [ ] -> Url.AfterLogin
+    | "booklist" :: booklistSegment -> Url.Booklist (Index.parseUrl booklistSegment)
+    | _ -> Url.NotFound
 
 type Model =
   { User: User; CurrentPage: Page; CurrentUrl : Url }
@@ -35,11 +45,10 @@ let init(user: User) =
 let update (msg: Msg) (model: Model) =
     match msg, model.CurrentPage with
     | UrlChanged url, _ ->
-        Console.WriteLine($"outer url: {url}")
         let getModelWithPageAndCmd =
             match url with
-            | Url.BooklistUrl _ ->
-                let indexModel, indexCmd = Index.init()
+            | Url.Booklist booklistUrl ->
+                let indexModel, indexCmd = Index.init booklistUrl
                 { model with CurrentPage = Page.Index indexModel; },Cmd.map IndexMsg indexCmd
             | Url.AfterLogin ->
                 let homeModel, homeCmd = init (model.User)
