@@ -41,7 +41,6 @@ type Msg =
     | SwitchToCreateAuthor
     | SwitchToBooklist
     | SwitchToBookDetails of Book
-    //| UrlChanged of Url
     | GotBookForDetails of Book
 
 let bookstoreApi = getApiProxy ()
@@ -67,24 +66,6 @@ let init (currentUrl: Url) : Model * Cmd<Msg> =
 
 let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     match model.CurrentPage, msg with
-    //| _, UrlChanged url ->
-    //    let getModelWithPageAndCmd (model : Model) =
-    //        match url with
-    //        | Url.Booklist ->
-    //            let booklistModel, cmd = Booklist.init ()
-    //            { model with CurrentPage = Page.BookList booklistModel}, Cmd.map BookMsg cmd
-    //        | Url.CreateAuthor ->
-    //            let authorsModel, cmd = CreateAuthor.init ()
-    //            { model with CurrentPage = Page.CreateAuthor authorsModel }, Cmd.map AuthorMsg cmd
-    //        | Url.BookDetails guid ->
-    //            let cmd = async {
-    //                let! book = bookstoreApi.getBook guid
-    //                return GotBookForDetails book
-    //            }
-    //            model, Cmd.OfAsync.result cmd
-    //        | Url.NotFound ->
-    //            { model with CurrentPage = Page.NotFound }, Cmd.none
-    //    getModelWithPageAndCmd { model with CurrentUrl = url }
     | _, GotBookForDetails book ->
         let detailsModel, cmd = BookDetails.init book
         { model with CurrentPage = Page.BookDetails detailsModel}, Cmd.map BookDetailsMsg cmd 
@@ -101,12 +82,6 @@ let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     | Page.BookDetails detailsModel, BookDetailsMsg detailsMsg ->
         let updatedDetailsModel, cmd = BookDetails.update detailsMsg detailsModel
         { model with CurrentPage = Page.BookDetails updatedDetailsModel}, Cmd.map BookDetailsMsg cmd
-    | _, SwitchToBooklist ->
-        let newModel, cmd = Booklist.init()
-        { model with CurrentPage = Page.BookList newModel }, Cmd.map BookMsg cmd
-    | _, SwitchToCreateAuthor ->
-        let newModel, cmd = CreateAuthor.init()
-        { model with CurrentPage = Page.CreateAuthor newModel }, Cmd.map AuthorMsg cmd
     | _, SwitchToBookDetails book ->
         let newModel, cmd = BookDetails.init book
         { model with CurrentPage = Page.BookDetails newModel }, Cmd.map BookDetailsMsg cmd

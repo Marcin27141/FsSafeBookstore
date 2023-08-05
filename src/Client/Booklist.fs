@@ -65,8 +65,7 @@ let update (msg: Msg) (model: Model) =
         let newModel = { model with Books = model.Books @ [ book ] }
         newModel, Cmd.none, Intent.DoNothing
     | ShowBookDetails book ->
-        //model, Cmd.none, Intent.ShowBookDetails book
-        model, Cmd.navigate("booklist", "details", book.Id.ToString()), Intent.DoNothing
+        model, Cmd.none, Intent.ShowBookDetails book
     | CreateAuthor ->
         model, Cmd.navigate("booklist", "authors"), Intent.DoNothing
 

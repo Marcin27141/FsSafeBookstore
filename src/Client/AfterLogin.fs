@@ -32,7 +32,6 @@ type Msg =
     | Logout
     | UrlChanged of Url
     | IndexMsg of Index.Msg
-    | ChangePageToIndex
 
 [<RequireQualifiedAccess>]
 type Intent =
