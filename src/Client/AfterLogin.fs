@@ -6,6 +6,7 @@ open Shared
 open Feliz
 open Feliz.Router
 open Fable
+open ViewUtils
 open System
 open Feliz.Bulma
 
@@ -62,18 +63,6 @@ let update (msg: Msg) (model: Model) =
         { model with CurrentPage = Page.Index updatedIndexModel }, Cmd.map IndexMsg indexCmd, Intent.DoNothing
     | _, _ -> model, Cmd.none, Intent.DoNothing
 
-let centered (children: ReactElement list) =
-    Html.div [
-        prop.style [
-            style.margin.auto
-            style.textAlign.center
-            style.padding 20
-            style.width (length.percent 100)
-        ]
-
-        prop.children children
-    ]
-
 let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
     Bulma.hero [
         hero.isFullHeight
@@ -97,7 +86,8 @@ let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
                         ]
                         Bulma.navbarMenu [
                             Bulma.navbarStart.div [
-                                Bulma.navbarItem.a [ prop.text "Create"; prop.href (Router.format(["booklist"; "books"])) ]
+                                Bulma.navbarItem.a [ prop.text "Booklist"; prop.href (Router.format(["booklist"; "books"])) ]
+                                Bulma.navbarItem.a [ prop.text "Create"; prop.href (Router.format(["booklist"; "create" ; "books"])) ]
                                 Bulma.navbarItem.a [ prop.text "Contact" ]
                                 Bulma.navbarItem.a [ prop.text "About" ]
                             ]
