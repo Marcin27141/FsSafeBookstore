@@ -28,41 +28,58 @@ module Storage =
         else
             Error "Invalid book"
 
+    let deleteBook (book: Book) =
+        if books.Contains book then
+            books.Remove book
+        else false
+
+    let deleteAuthor (author: Author) =
+        if authors.Contains author then
+            authors.Remove author
+        else false
+
     //do
     //    addBook (Book.create ("Hamlet", Author.create ("William", "Shakespeare"))) |> ignore
     //    addBook (Book.create ("Pan Tadeusz", Author.create ("Adam", "Mickiewicz"))) |> ignore
     //    addBook (Book.create ("Kordian", Author.create ("Juliusz", "Słowacki"))) |> ignore
 
 let authorsApi : IAuthorsApi =
-    { getAuthors = fun () -> async { return Storage.authors |> List.ofSeq }
-      addAuthor =
-        fun author ->
-            async {
-                return
-                    match Storage.addAuthor author with
-                    | Ok () -> author
-                    | Error e -> failwith e
-            }
-            }
+    {
+        getAuthors = fun () -> async { return Storage.authors |> List.ofSeq }
+        addAuthor =
+            fun author ->
+                async {
+                    return
+                        match Storage.addAuthor author with
+                        | Ok () -> author
+                        | Error e -> failwith e
+                }
+        deleteAuthor = fun author -> async { return Storage.deleteAuthor author }
 
-let booksApi =
-    { getBooks = fun () -> async { return Storage.books |> List.ofSeq }
-      addBook =
-        fun book ->
-            async {
-                return
-                    match Storage.addBook book with
-                    | Ok () -> book
-                    | Error e -> failwith e
-            }
-     }
-
+    }
 
 let bookstoreIndexApi =
     {
         getAuthor = fun id -> async { return Storage.authors |> Seq.find (fun (author: Author) -> author.Id = id) }
         getBook = fun id -> async { return Storage.books |> Seq.find (fun (book: Book) -> book.Id = id) }
     }
+
+let booksApi : IBooksApi =
+    {
+        getBooks = fun () -> async { return Storage.books |> List.ofSeq }
+        addBook =
+            fun book ->
+                async {
+                    return
+                        match Storage.addBook book with
+                        | Ok () -> book
+                        | Error e -> failwith e
+                }
+        deleteBook = fun book -> async { return Storage.deleteBook book }
+    }
+
+
+
 
 let userApi =
     { login =
@@ -83,7 +100,9 @@ let serverApi =
         getBooks = booksApi.getBooks
         getBook = bookstoreIndexApi.getBook
         addBook = booksApi.addBook
+        deleteBook = booksApi.deleteBook
         getAuthor = bookstoreIndexApi.getAuthor
+        deleteAuthor = authorsApi.deleteAuthor
         getAuthors = authorsApi.getAuthors
         addAuthor = authorsApi.addAuthor
         login = userApi.login

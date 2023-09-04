@@ -21,6 +21,8 @@ type Intent =
 type Msg =
     | GotBooks of Book list
     | ShowBookDetails of Book
+    | DeleteBook of Book
+    | BookDeleted of bool
 
 let bookstoreApi = getApiProxy ()
 
@@ -36,6 +38,13 @@ let update (msg: Msg) (model: Model) =
         newModel, Cmd.none, Intent.DoNothing
     | ShowBookDetails book ->
         model, Cmd.none, Intent.ShowBookDetails book
+    | DeleteBook book ->
+        let cmd = Cmd.OfAsync.perform bookstoreApi.deleteBook book BookDeleted
+        model, cmd, Intent.DoNothing
+    | BookDeleted true ->
+        let cmd = Cmd.OfAsync.perform bookstoreApi.getBooks () GotBooks
+        model, cmd, Intent.DoNothing
+    | _ -> model, Cmd.none, Intent.DoNothing
 
 let getCardFromBook (dispatch: Msg -> unit) (book: Book)  =
     Bulma.card [
@@ -73,6 +82,7 @@ let getCardFromBook (dispatch: Msg -> unit) (book: Book)  =
             ]
             Bulma.cardFooterItem.a [
                 prop.text "Delete"
+                prop.onClick (fun _ -> dispatch (DeleteBook book))
             ]
         ]
         Html.div [ prop.className "mb-4" ]
@@ -80,9 +90,12 @@ let getCardFromBook (dispatch: Msg -> unit) (book: Book)  =
     
 
 let render (model: Model) (dispatch: Msg -> unit) =
-    Html.div [
-        prop.children (model.Books |> List.map (fun book -> getCardFromBook dispatch book))
-    ]
+    if model.Books.Length > 0 then
+        Html.div [
+            prop.children (model.Books |> List.map (fun book -> getCardFromBook dispatch book))
+        ]
+    else
+        Html.text "No books found"
 
 
 
