@@ -7,6 +7,7 @@ open Feliz
 open Feliz.Router
 open Fable
 open System
+open Feliz.Bulma
 
 [<RequireQualifiedAccess>]
 type Page =
@@ -74,25 +75,100 @@ let centered (children: ReactElement list) =
     ]
 
 let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
-    Html.div [
-        centered [
-            Html.div [
-                Html.h1 [
-                    Html.strong (model.User.Username.ToUpper())
-                ]
+    Bulma.hero [
+        hero.isFullHeight
+        color.isPrimary
+        prop.style [
+            style.backgroundSize "cover"
+            style.backgroundImageUrl "/bookshelf.jpg"
+            style.backgroundPosition "no-repeat center center fixed"
+        ]
+        prop.children [
+            Bulma.heroHead [
+                Bulma.navbar [
+                    prop.children [
+                        Bulma.navbarBrand.div [
+                            Bulma.navbarItem.a [
+                                prop.href (Router.format([]))
+                                prop.children [
+                                    Html.img [ prop.src "https://bulma.io/images/bulma-logo-white.png"; prop.height 28; prop.width 112; ]
+                                ]
+                            ]
+                        ]
+                        Bulma.navbarMenu [
+                            Bulma.navbarStart.div [
+                                Bulma.navbarItem.a [ prop.text "Create"; prop.href (Router.format(["booklist"; "books"])) ]
+                                Bulma.navbarItem.a [ prop.text "Contact" ]
+                                Bulma.navbarItem.a [ prop.text "About" ]
+                            ]
+                            Bulma.navbarEnd.div [
+                                Bulma.navbarItem.div [
+                                    Bulma.media [
+                                        Bulma.mediaContent [
+                                            Bulma.text.hasTextRight
+                                            prop.children [
+                                                Bulma.title.p [
+                                                    Bulma.text.hasTextWeightBold
+                                                    Bulma.title.is6
+                                                    prop.text model.User.Username
+                                                ]
+                                                Bulma.subtitle.p [
+                                                    Bulma.title.is6
+                                                    Bulma.text.hasTextWeightLight
+                                                    Bulma.color.hasTextGreyLighter
+                                                    prop.text $"@{model.User.Username.ToLower()}"
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                                Bulma.navbarItem.div [
+                                    Bulma.buttons [
+                                        Bulma.button.a [
+                                            prop.className "button is-info"
+                                            prop.onClick (fun _ -> dispatch Logout)
+                                            prop.children [
+                                                Html.strong "Logout"
+                                            ]
+                                        ]
 
-                Html.button [
-                    prop.className "button is-info"
-                    prop.onClick (fun _ -> dispatch Logout)
-                    prop.text "Logout"
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
                 ]
             ]
-        ]
-
-        Html.a [
-                prop.text "Booklist"
-                prop.href (Router.format(["booklist"; "books"]))
-                prop.style [ style.margin 5 ]
+            Bulma.heroBody [
+                Bulma.container [
+                    Bulma.column [
+                        column.is6
+                        column.isOffset3
+                        prop.children [
+                            Bulma.title [
+                                text.hasTextCentered
+                                prop.text "FsSafeApplication"
+                            ]
+                            match model.CurrentPage with
+                            | Page.Home -> Html.none
+                            | Page.Index model -> Index.render model (Msg.IndexMsg >> dispatch)
+                            | Page.NotFound ->
+                                centered [
+                                    Html.h1 [
+                                        Html.strong "Page not found"
+                                    ]
+                                ]
+                        ]
+                    ]
+                    Html.div [
+                        prop.style [
+                            style.margin.auto
+                            style.textAlign.center
+                            style.width (length.percent 100)
+                        ]
+                    ]
+                ]
+            ]
         ]
     ]
     
@@ -103,13 +179,4 @@ let render (model: Model) (dispatch: Msg -> unit) =
         React.router [
             router.onUrlChanged (parseUrl >> UrlChanged >> dispatch)
         ]
-        match model.CurrentPage with
-        | Page.Home -> Html.none
-        | Page.Index model -> Index.render model (Msg.IndexMsg >> dispatch)
-        | Page.NotFound ->
-            centered [
-                Html.h1 [
-                    Html.strong "Page not found"
-                ]
-            ]
     ]

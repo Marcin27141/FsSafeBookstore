@@ -71,6 +71,11 @@ let renderLoginOutcome (loginProcess: LoginProcess)=
 let layout (children: ReactElement list) =
     Html.section [
         prop.className "hero is-fullheight"
+        prop.style [
+            style.backgroundImageUrl "/bookshelf.jpg"
+            style.backgroundSize "cover"
+            style.backgroundPosition "no-repeat center center fixed"
+        ]
         prop.children [
             Html.div [
                 prop.className "hero-body"

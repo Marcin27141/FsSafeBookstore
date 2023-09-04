@@ -111,65 +111,55 @@ let centered (children: ReactElement list) =
 
         prop.children children
     ]
+
+let getNavbar () =
+    Bulma.navbarMenu [
+        Bulma.navbarStart.div [
+            Bulma.navbarItem.a [ prop.text "Home" ]
+            Bulma.navbarItem.a [ prop.text "Documentation" ]
+            Bulma.navbarItem.div [
+                Bulma.navbarItem.hasDropdown
+                Bulma.navbarItem.isHoverable
+                prop.children [
+                    Bulma.navbarLink.a [ prop.text "More" ]
+                    Bulma.navbarDropdown.div [
+                        Bulma.navbarItem.a [ prop.text "About" ]
+                        Bulma.navbarItem.a [ prop.text "Jobs" ]
+                        Bulma.navbarItem.a [ prop.text "Contact" ]
+                        Bulma.navbarDivider []
+                        Bulma.navbarItem.a [ prop.text "Report a issue" ]
+                    ]
+                ]
+            ]
+        ]
+        Bulma.navbarEnd.div [
+            Bulma.navbarItem.div [
+                Bulma.buttons [
+                    Bulma.button.a [
+                        Bulma.color.isPrimary
+                        prop.children [
+                            Html.strong "Sign up"
+                        ]
+                    ]
+                    Bulma.button.a [ prop.text "Log In" ]
+                ]
+            ]
+        ]
+    ]
     
 
 let render (model:Model) (dispatch: Msg -> unit) =
-    Bulma.hero [
-        hero.isFullHeight
-        color.isPrimary
-        prop.style [
-            style.backgroundSize "cover"
-            style.backgroundImageUrl "https://unsplash.it/1200/900?random"
-            style.backgroundPosition "no-repeat center center fixed"
-        ]
-        prop.children [
-            Bulma.heroHead [
-                Bulma.navbar [
-                    Bulma.container [ navBrand ]
-                ]
-            ]
-            Bulma.heroBody [
-                Bulma.container [
-                    Bulma.column [
-                        column.is6
-                        column.isOffset3
-                        prop.children [
-                            //React.router [
-                            //    router.onUrlChanged (parseUrl >> UrlChanged >> dispatch)
-                            //]
-                            Bulma.title [
-                                text.hasTextCentered
-                                prop.text "FsSafeApplication"
-                            ]
-                            match model.CurrentPage with
-                            | Page.Loading -> Html.div [ Bulma.pageLoader.isActive ]
-                            | Page.BookList model -> Booklist.render model (Msg.BookMsg >> dispatch)
-                            | Page.CreateAuthor model -> CreateAuthor.render model (Msg.AuthorMsg >> dispatch)
-                            | Page.BookDetails model -> BookDetails.render model (Msg.BookDetailsMsg >> dispatch)
-                            | Page.NotFound -> Html.h1 "Page not found"
-                        ]
-                    ]
-                    Html.div [
-                        prop.style [
-                            style.margin.auto
-                            style.textAlign.center
-                            style.width (length.percent 100)
-                        ]
-
-                        //prop.children [
-                        //    Bulma.button.a [
-                        //        color.isInfo
-                        //        let getMsgAndText =
-                        //            match model.CurrentPage with
-                        //            | Page.BookList _ -> SwitchToCreateAuthor, "Create author"
-                        //            | _ -> SwitchToBooklist, "Show booklist"
-                        //        let msg, text = getMsgAndText
-                        //        prop.onClick (fun _ -> dispatch msg)
-                        //        prop.text text
-                        //    ]
-                        //]
-                    ]
-                ]
+    Bulma.container [
+        Bulma.column [
+            column.is6
+            column.isOffset3
+            prop.children [
+                match model.CurrentPage with
+                | Page.Loading -> Html.div [ Bulma.pageLoader.isActive ]
+                | Page.BookList model -> Booklist.render model (Msg.BookMsg >> dispatch)
+                | Page.CreateAuthor model -> CreateAuthor.render model (Msg.AuthorMsg >> dispatch)
+                | Page.BookDetails model -> BookDetails.render model (Msg.BookDetailsMsg >> dispatch)
+                | Page.NotFound -> Html.h1 "Page not found"
             ]
         ]
-        ]
+    ]
