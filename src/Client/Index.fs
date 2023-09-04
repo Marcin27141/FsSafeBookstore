@@ -18,6 +18,7 @@ type Page =
     | AuthorDetails of AuthorDetails.Model
     | CreateAuthor of CreateAuthor.Model
     | CreateBook of CreateBook.Model
+    | EditBook of EditBook.Model
     | NotFound
 
 [<RequireQualifiedAccess>]
@@ -25,6 +26,7 @@ type Url =
   | Booklist
   | CreateAuthor
   | CreateBook
+  | EditBook of Guid
   | BookDetails of Guid
   | AuthorDetails of Guid
   | NotFound
@@ -33,6 +35,7 @@ let parseUrl = function
     | [ "books" ] -> Url.Booklist
     | [ "create"; "authors" ] -> Url.CreateAuthor
     | [ "create"; "books" ] -> Url.CreateBook
+    | [ "edit"; "books"; Route.Guid bookId ] -> Url.BookDetails bookId
     | [ "book"; Route.Guid bookId ] -> Url.BookDetails bookId
     | [ "author"; Route.Guid authorId ] -> Url.AuthorDetails authorId
     | _ -> Url.NotFound
@@ -43,6 +46,7 @@ type Msg =
     | BooklistMsg of Booklist.Msg
     | CreateAuthorMsg of CreateAuthor.Msg
     | CreateBookMsg of CreateBook.Msg
+    | EditBookMsg of EditBook.Msg
     | BookDetailsMsg of BookDetails.Msg
     | AuthorDetailsMsg of AuthorDetails.Msg
     | GotBookForInit of Book
@@ -50,10 +54,11 @@ type Msg =
     | SwitchToAuthorDetails of Author
     | GotBookForDetails of Book
     | GotAuthorForDetails of Author
+    | GotBookForEdit of Book
 
 let bookstoreApi = getApiProxy ()
 
-let init (currentUrl: Url) : Model * Cmd<Msg> =
+let init (currentUrl: Url) : Model * Cmd<Msg> =    
     match currentUrl with
     | Url.Booklist ->
         let model, cmd = Booklist.init ()
@@ -65,8 +70,14 @@ let init (currentUrl: Url) : Model * Cmd<Msg> =
         newModel, Cmd.map CreateAuthorMsg cmd
     | Url.CreateBook ->
         let model, cmd = CreateBook.init ()
-        let newModel = { CurrentUrl = currentUrl; CurrentPage = Page.CreateBook model}
+        let newModel = { CurrentUrl = currentUrl; CurrentPage = Page.CreateBook model }
         newModel, Cmd.map CreateBookMsg cmd
+    | Url.EditBook bookId ->
+        let cmd = async {
+            let! book = bookstoreApi.getBook bookId
+            return GotBookForEdit book
+        }
+        { CurrentUrl = currentUrl; CurrentPage = Page.Loading }, Cmd.OfAsync.result cmd
     | Url.BookDetails guid ->
         let cmd = async {
             let! book = bookstoreApi.getBook guid
@@ -84,6 +95,9 @@ let init (currentUrl: Url) : Model * Cmd<Msg> =
 
 let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     match model.CurrentPage, msg with
+    | _, GotBookForEdit book ->
+        let editModel, cmd = EditBook.init book
+        { model with CurrentPage = Page.EditBook editModel}, Cmd.map EditBookMsg cmd
     | _, GotBookForDetails book ->
         let detailsModel, cmd = BookDetails.init book
         { model with CurrentPage = Page.BookDetails detailsModel}, Cmd.map BookDetailsMsg cmd
@@ -110,11 +124,23 @@ let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
             let newBookModel, cmd = CreateBook.update bookMsg bookModel
             { model with CurrentPage = Page.CreateBook newBookModel}, Cmd.map CreateBookMsg cmd
     | Page.BookDetails detailsModel, BookDetailsMsg detailsMsg ->
-        let updatedDetailsModel, cmd = BookDetails.update detailsMsg detailsModel
-        { model with CurrentPage = Page.BookDetails updatedDetailsModel}, Cmd.map BookDetailsMsg cmd
+        match detailsMsg with
+        | BookDetails.Msg.EditBook book ->
+            let editModel, cmd = EditBook.init book
+            { model with CurrentPage = Page.EditBook editModel }, Cmd.map EditBookMsg cmd
+        | _ ->
+            let updatedDetailsModel, cmd = BookDetails.update detailsMsg detailsModel
+            { model with CurrentPage = Page.BookDetails updatedDetailsModel}, Cmd.map BookDetailsMsg cmd
     | Page.AuthorDetails detailsModel, AuthorDetailsMsg detailsMsg ->
         let updatedDetailsModel, cmd = AuthorDetails.update detailsMsg detailsModel
         { model with CurrentPage = Page.AuthorDetails updatedDetailsModel}, Cmd.map AuthorDetailsMsg cmd
+    | Page.EditBook editModel, EditBookMsg editMsg ->
+        match editMsg with
+        | EditBook.Msg.EditedBook true ->
+            { model with CurrentPage = Page.EditBook editModel}, Cmd.ofMsg (SwitchToBookDetails editModel.EditedBook.Value)
+        | _ ->
+            let updatedEditModel, cmd = EditBook.update editMsg editModel
+            { model with CurrentPage = Page.EditBook updatedEditModel}, Cmd.map EditBookMsg cmd 
     | _, SwitchToBookDetails book ->
         let newModel, cmd = BookDetails.init book
         { model with CurrentPage = Page.BookDetails newModel }, Cmd.map BookDetailsMsg cmd
@@ -159,6 +185,7 @@ let render (model:Model) (dispatch: Msg -> unit) =
                 | Page.BookList model -> Booklist.render model (Msg.BooklistMsg >> dispatch)
                 | Page.CreateAuthor model -> CreateAuthor.render model (Msg.CreateAuthorMsg >> dispatch)
                 | Page.CreateBook model -> CreateBook.render model (Msg.CreateBookMsg >> dispatch)
+                | Page.EditBook model -> EditBook.render model (Msg.EditBookMsg >> dispatch)
                 | Page.BookDetails model -> BookDetails.render model (Msg.BookDetailsMsg >> dispatch)
                 | Page.AuthorDetails model -> AuthorDetails.render model (Msg.AuthorDetailsMsg >> dispatch)
                 | Page.NotFound -> Html.h1 "Page not found"

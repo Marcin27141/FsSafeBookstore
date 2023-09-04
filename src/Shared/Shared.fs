@@ -32,12 +32,14 @@ module Route =
 type IAuthorsApi =
     { getAuthors: unit -> Async<Author list>
       addAuthor: Author -> Async<Author>
-      deleteAuthor: Author -> Async<bool> }
+      deleteAuthor: Author -> Async<bool>
+      editAuthor: Author * Author -> Async<bool> }
 
 type IBooksApi =
     { getBooks: unit -> Async<Book list>
       addBook: Book -> Async<Book>
-      deleteBook: Book -> Async<bool> }
+      deleteBook: Book -> Async<bool>
+      editBook: Book * Book -> Async<bool> }
 
 type IBookstoreIndexApi =
     {
@@ -73,10 +75,12 @@ type IServerApi =
       getBooks: unit -> Async<Book list>
       getBook: Guid -> Async<Book>
       addBook: Book -> Async<Book>
+      editBook: Book * Book -> Async<bool>
       deleteBook: Book -> Async<bool>
       getAuthor: Guid -> Async<Author>
       getAuthors: unit -> Async<Author list>
       addAuthor: Author -> Async<Author>
+      editAuthor: Author * Author -> Async<bool>
       deleteAuthor: Author -> Async<bool>
       login: LoginRequest -> Async<LoginResult>
     }

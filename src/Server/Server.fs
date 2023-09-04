@@ -38,6 +38,20 @@ module Storage =
             authors.Remove author
         else false
 
+    let editAuthor (oldAuthor: Author, editedAuthor: Author) =
+        if authors.Contains oldAuthor && oldAuthor.Id = editedAuthor.Id then
+            authors.Remove oldAuthor |> ignore
+            authors.Add editedAuthor
+            true
+        else false
+
+    let editBook (oldBook: Book, editedBook: Book) =
+        if books.Contains oldBook && oldBook.Id = editedBook.Id then
+            books.Remove oldBook |> ignore
+            books.Add editedBook
+            true
+        else false
+
     //do
     //    addBook (Book.create ("Hamlet", Author.create ("William", "Shakespeare"))) |> ignore
     //    addBook (Book.create ("Pan Tadeusz", Author.create ("Adam", "Mickiewicz"))) |> ignore
@@ -55,7 +69,11 @@ let authorsApi : IAuthorsApi =
                         | Error e -> failwith e
                 }
         deleteAuthor = fun author -> async { return Storage.deleteAuthor author }
-
+        editAuthor =
+            fun (oldAuthor, editedAuthor) ->
+                async {
+                    return Storage.editAuthor (oldAuthor, editedAuthor)
+                }
     }
 
 let bookstoreIndexApi =
@@ -76,6 +94,11 @@ let booksApi : IBooksApi =
                         | Error e -> failwith e
                 }
         deleteBook = fun book -> async { return Storage.deleteBook book }
+        editBook =
+            fun (oldBook, editedBook) ->
+                async {
+                    return Storage.editBook (oldBook, editedBook)
+                }
     }
 
 
@@ -100,11 +123,13 @@ let serverApi =
         getBooks = booksApi.getBooks
         getBook = bookstoreIndexApi.getBook
         addBook = booksApi.addBook
+        editBook = booksApi.editBook
         deleteBook = booksApi.deleteBook
         getAuthor = bookstoreIndexApi.getAuthor
         deleteAuthor = authorsApi.deleteAuthor
         getAuthors = authorsApi.getAuthors
         addAuthor = authorsApi.addAuthor
+        editAuthor = authorsApi.editAuthor
         login = userApi.login
     }
 

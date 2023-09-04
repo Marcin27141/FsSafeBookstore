@@ -1,5 +1,5 @@
 [<RequireQualifiedAccess>]
-module CreateBook
+module EditBook
 
 open Feliz
 open Feliz.Bulma
@@ -11,20 +11,20 @@ open ViewUtils
 open ApiProxy
 open Feliz.Router
 
-type Model = { Authors: Author list; TitleInput: string; AuthorId: string }
+type Model = { OldBook: Book; EditedBook: Option<Book>; Authors: Author list; TitleInput: string; AuthorId: string }
 
 type Msg =
     | GotAuthors of Author list
     | SetTitleInput of string
     | SetAuthorId of string
-    | AddBook of Author
-    | AddedBook of Book
+    | EditBook of Author
+    | EditedBook of bool
     | GetAuthor
 
 let bookstoreApi = getApiProxy ()
 
-let init () : Model * Cmd<Msg> =
-    let model = { Authors = []; TitleInput = ""; AuthorId = "" }
+let init (oldBook: Book) : Model * Cmd<Msg> =
+    let model = { OldBook = oldBook; EditedBook = None; Authors = []; TitleInput = oldBook.Title; AuthorId = oldBook.Author.Id.ToString()}
     let initialCmd = Cmd.OfAsync.perform bookstoreApi.getAuthors () GotAuthors
     model, initialCmd
 
@@ -40,14 +40,14 @@ let update (msg: Msg) (model: Model) =
         let newModel = { model with AuthorId = value }
         newModel, Cmd.none
     | GetAuthor ->
-        let cmd = Cmd.OfAsync.perform bookstoreApi.getAuthor (Guid.Parse(model.AuthorId)) AddBook
-        let newModel = { model with AuthorId = "" }
-        newModel, cmd
-    | AddBook author ->
-        let book = Book.create (model.TitleInput, author)
-        let cmd = Cmd.OfAsync.perform bookstoreApi.addBook book AddedBook
+        let cmd = Cmd.OfAsync.perform bookstoreApi.getAuthor (Guid.Parse(model.AuthorId)) EditBook
         model, cmd
-    | AddedBook book ->
+    | EditBook author ->
+        let editedBook = Book.create (model.TitleInput, author)
+        let editedBookWithOldId = { editedBook with Id = model.OldBook.Id }
+        let cmd = Cmd.OfAsync.perform bookstoreApi.editBook (model.OldBook, editedBookWithOldId) EditedBook
+        { model with EditedBook = Some editedBookWithOldId }, cmd
+    | EditedBook bool ->
         model, Cmd.none
 
 let authorDropdownOptions (authors: Author list) =
@@ -105,7 +105,7 @@ let render (model: Model) (dispatch: Msg -> unit) =
                                         color.isPrimary
                                         prop.disabled (String.IsNullOrEmpty model.TitleInput || String.IsNullOrEmpty model.AuthorId)
                                         prop.onClick (fun _ -> dispatch GetAuthor)
-                                        prop.text "Add"
+                                        prop.text "Edit"
                                     ]
                                 ]
                             ]

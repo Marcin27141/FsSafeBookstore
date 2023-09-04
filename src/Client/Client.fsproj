@@ -11,6 +11,7 @@
         <Compile Include="AuthorDetails.fs" />
         <Compile Include="CreateAuthor.fs" />
         <Compile Include="CreateBook.fs" />
+        <Compile Include="EditBook.fs" />
         <Compile Include="Booklist.fs" />
         <None Include="index.html" />
         <None Include="paket.references" />
@@ -20,7 +21,6 @@
         <Compile Include="LoginIndex.fs" />
         <Compile Include="App.fs" />
     </ItemGroup>
-    <ItemGroup />
     <ItemGroup>
       <PackageReference Include="Feliz.Bulma.PageLoader" Version="3.0.0" />
       <PackageReference Include="Feliz.Router" Version="3.0.1" />
