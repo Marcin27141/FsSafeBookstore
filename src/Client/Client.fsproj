@@ -8,6 +8,7 @@
         <Compile Include="ViewUtils.fs" />
         <Compile Include="ApiProxy.fs" />
         <Compile Include="BookDetails.fs" />
+        <Compile Include="AuthorDetails.fs" />
         <Compile Include="CreateAuthor.fs" />
         <Compile Include="CreateBook.fs" />
         <Compile Include="Booklist.fs" />

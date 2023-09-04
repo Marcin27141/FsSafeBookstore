@@ -87,7 +87,8 @@ let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
                         Bulma.navbarMenu [
                             Bulma.navbarStart.div [
                                 Bulma.navbarItem.a [ prop.text "Booklist"; prop.href (Router.format(["booklist"; "books"])) ]
-                                Bulma.navbarItem.a [ prop.text "Create"; prop.href (Router.format(["booklist"; "create" ; "books"])) ]
+                                Bulma.navbarItem.a [ prop.text "Add book"; prop.href (Router.format(["booklist"; "create" ; "books"])) ]
+                                Bulma.navbarItem.a [ prop.text "Add author"; prop.href (Router.format(["booklist"; "create" ; "authors"])) ]
                                 Bulma.navbarItem.a [ prop.text "Contact" ]
                                 Bulma.navbarItem.a [ prop.text "About" ]
                             ]

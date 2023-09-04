@@ -11,7 +11,7 @@ open ViewUtils
 open ApiProxy
 open Feliz.Router
 
-type Model = { Books: Book list }
+type Model = { Books: Book list; IsLoading: bool }
 
 [<RequireQualifiedAccess>]
 type Intent =
@@ -27,23 +27,23 @@ type Msg =
 let bookstoreApi = getApiProxy ()
 
 let init () : Model * Cmd<Msg> =
-    let model = { Books = [] }
+    let model = { Books = []; IsLoading = true }
     let initialCmd = Cmd.OfAsync.perform bookstoreApi.getBooks () GotBooks
     model, initialCmd
 
 let update (msg: Msg) (model: Model) =
     match msg with
     | GotBooks books ->
-        let newModel = { model with Books = books }
+        let newModel = { model with Books = books; IsLoading = false }
         newModel, Cmd.none, Intent.DoNothing
     | ShowBookDetails book ->
-        model, Cmd.none, Intent.ShowBookDetails book
+        { model with IsLoading = true }, Cmd.none, Intent.ShowBookDetails book
     | DeleteBook book ->
         let cmd = Cmd.OfAsync.perform bookstoreApi.deleteBook book BookDeleted
-        model, cmd, Intent.DoNothing
+        { model with IsLoading = true }, cmd, Intent.DoNothing
     | BookDeleted true ->
         let cmd = Cmd.OfAsync.perform bookstoreApi.getBooks () GotBooks
-        model, cmd, Intent.DoNothing
+        { model with IsLoading = false }, cmd, Intent.DoNothing
     | _ -> model, Cmd.none, Intent.DoNothing
 
 let getCardFromBook (dispatch: Msg -> unit) (book: Book)  =
@@ -90,12 +90,18 @@ let getCardFromBook (dispatch: Msg -> unit) (book: Book)  =
     
 
 let render (model: Model) (dispatch: Msg -> unit) =
-    if model.Books.Length > 0 then
+    if model.IsLoading then
         Html.div [
-            prop.children (model.Books |> List.map (fun book -> getCardFromBook dispatch book))
+            Bulma.pageLoader.isActive
+            Bulma.pageLoader.isSuccess
         ]
     else
-        Html.text "No books found"
+        if model.Books.Length > 0 then
+            Html.div [
+                prop.children (model.Books |> List.map (fun book -> getCardFromBook dispatch book))
+            ]
+        else
+            Html.text "No books found"
 
 
 

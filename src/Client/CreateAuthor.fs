@@ -8,29 +8,25 @@ open Feliz
 open Feliz.Bulma
 open ApiProxy
 open Feliz.Router
+open ViewUtils
+open System
 
-type Model = { Authors: Author list; FirstNameInput: string; LastNameInput: string }
+type Model = { FirstNameInput: string; LastNameInput: string }
 
 type Msg =
-    | GotAuthors of Author list
     | SetFirstNameInput of string
     | SetLastNameInput of string
     | AddAuthor
     | AddedAuthor of Author
-    | Return
 
 let bookstoreApi = getApiProxy ()
 
 let init () : Model * Cmd<Msg> =
-    let model = { Authors = []; FirstNameInput = ""; LastNameInput = "" }
-    let cmd = Cmd.OfAsync.perform bookstoreApi.getAuthors () GotAuthors
-    model, cmd
+    let model = { FirstNameInput = ""; LastNameInput = "" }
+    model, Cmd.none
 
 let update (msg: Msg) (model: Model) =
     match msg with
-    | GotAuthors authors ->
-        let newModel = { model with Authors = authors }
-        newModel, Cmd.none
     | SetFirstNameInput value ->
         let newModel = { model with FirstNameInput = value }
         newModel, Cmd.none
@@ -40,64 +36,54 @@ let update (msg: Msg) (model: Model) =
     | AddAuthor ->
         let author = Author.create (model.FirstNameInput, model.LastNameInput)
         let cmd = Cmd.OfAsync.perform bookstoreApi.addAuthor author AddedAuthor
-        let newModel = { model with FirstNameInput = ""; LastNameInput = "" }
-        newModel, cmd 
-    | AddedAuthor author ->
-        let newModel = { model with Authors = model.Authors @ [ author ] }
-        newModel, Cmd.none
-    | Return -> model, Cmd.navigate("booklist", "books")
+        model, cmd 
+    | AddedAuthor _ ->
+        model, Cmd.none
 
 let render (model: Model) (dispatch: Msg -> unit) =
     Html.div [
         prop.children [
             Bulma.box [
-                Bulma.content [
-                    Html.ol [
-                        for author in model.Authors do
-                            Html.li [ prop.text (sprintf "%s %s" author.FirstName author.LastName) ]
-                    ]
-                ]
                 Bulma.field.div [
                     field.isGrouped
                     prop.children [
                         Bulma.control.p [
                             control.isExpanded
                             prop.children [
-                                Bulma.input.text [
-                                    prop.value model.FirstNameInput
-                                    prop.placeholder "Author's first name"
-                                    prop.onChange (fun x -> SetFirstNameInput x |> dispatch)
+                                Bulma.container [
+                                    Bulma.label [
+                                        prop.className "label"
+                                        prop.text "First Name"
+                                    ]
+                                    Bulma.input.text [
+                                        prop.value model.FirstNameInput
+                                        prop.placeholder "Author's first name"
+                                        prop.onChange (fun x -> SetFirstNameInput x |> dispatch)
+                                    ]
                                 ]
-                                Bulma.input.text [
-                                    prop.value model.LastNameInput
-                                    prop.placeholder "Author's last name"
-                                    prop.onChange (fun x -> SetLastNameInput x |> dispatch)
+                                Html.div [ prop.className "mb-4" ]
+                                Bulma.container [
+                                    Bulma.label [
+                                        prop.className "label"
+                                        prop.text "Last Name"
+                                    ]
+                                    Bulma.input.text [
+                                        prop.value model.LastNameInput
+                                        prop.placeholder "Author's last name"
+                                        prop.onChange (fun x -> SetLastNameInput x |> dispatch)
+                                    ]
+                                ]
+                                Html.div [ prop.className "mb-4" ]
+                                centered [
+                                    Bulma.button.a [
+                                        color.isPrimary
+                                        prop.disabled (String.IsNullOrEmpty model.FirstNameInput || String.IsNullOrEmpty model.LastNameInput)
+                                        prop.onClick (fun _ -> dispatch AddAuthor)
+                                        prop.text "Add"
+                                    ]
                                 ]
                             ]
                         ]
-                        Bulma.control.p [
-                            Bulma.button.a [
-                                color.isPrimary
-                                prop.disabled (Author.isValid(model.FirstNameInput, model.LastNameInput) |> not)
-                                prop.onClick (fun _ -> dispatch AddAuthor)
-                                prop.text "Add"
-                            ]
-                        ]
-                    ]
-                ]
-            ]
-            Html.div [
-                prop.style [
-                    style.margin.auto
-                    style.textAlign.center
-                    style.width (length.percent 100)
-                    style.marginTop 30
-                ]
-                prop.children [
-                    Bulma.button.a [
-                        color.isInfo
-                        prop.text "Return"
-                        prop.onClick (fun _ -> dispatch Return)
                     ]
                 ]
             ]

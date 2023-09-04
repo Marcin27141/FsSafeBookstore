@@ -1,6 +1,5 @@
 [<RequireQualifiedAccess>]
-module BookDetails
-
+module AuthorDetails
 
 open Feliz
 open Feliz.Bulma
@@ -9,13 +8,13 @@ open Elmish
 open System
 open Feliz.Router
 
-type Model = { Book: Book }
+type Model = { Author: Author}
 
 type Msg =
     | Return
 
-let init (book: Book) =
-    { Book = book }, Cmd.none
+let init (author: Author) =
+    { Author = author}, Cmd.none
 
 let update (msg: Msg) (model: Model) =
     match msg with
@@ -32,12 +31,12 @@ let render (model: Model) (dispatch: Msg -> unit) =
         prop.children [
             let bookTableRows =
                 [ Html.tr [
-                        Html.td [ Html.p "Title" ]
-                        Html.td [ Html.h3 model.Book.Title ]
+                        Html.td [ Html.p "First name" ]
+                        Html.td [ Html.h3 model.Author.FirstName ]
                         ] ;
                 Html.tr [
-                        Html.td [ Html.p "Author" ]
-                        Html.td [ Html.h3 (sprintf "%s %s" model.Book.Author.FirstName model.Book.Author.LastName) ]
+                        Html.td [ Html.p "Last name" ]
+                        Html.td [ Html.h3 model.Author.LastName ]
                         ]]
             Bulma.box [    
                 Bulma.content [
@@ -53,3 +52,4 @@ let render (model: Model) (dispatch: Msg -> unit) =
         ]
     ]
     
+

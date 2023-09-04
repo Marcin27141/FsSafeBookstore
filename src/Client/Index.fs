@@ -15,6 +15,7 @@ type Page =
     | Loading
     | BookList of Booklist.Model
     | BookDetails of BookDetails.Model
+    | AuthorDetails of AuthorDetails.Model
     | CreateAuthor of CreateAuthor.Model
     | CreateBook of CreateBook.Model
     | NotFound
@@ -25,13 +26,15 @@ type Url =
   | CreateAuthor
   | CreateBook
   | BookDetails of Guid
+  | AuthorDetails of Guid
   | NotFound
 
 let parseUrl = function
     | [ "books" ] -> Url.Booklist
     | [ "create"; "authors" ] -> Url.CreateAuthor
     | [ "create"; "books" ] -> Url.CreateBook
-    | [ "details"; Route.Guid bookId ] -> Url.BookDetails bookId
+    | [ "book"; Route.Guid bookId ] -> Url.BookDetails bookId
+    | [ "author"; Route.Guid authorId ] -> Url.AuthorDetails authorId
     | _ -> Url.NotFound
 
 type Model = { CurrentPage: Page; CurrentUrl: Url }
@@ -41,9 +44,12 @@ type Msg =
     | CreateAuthorMsg of CreateAuthor.Msg
     | CreateBookMsg of CreateBook.Msg
     | BookDetailsMsg of BookDetails.Msg
+    | AuthorDetailsMsg of AuthorDetails.Msg
     | GotBookForInit of Book
     | SwitchToBookDetails of Book
+    | SwitchToAuthorDetails of Author
     | GotBookForDetails of Book
+    | GotAuthorForDetails of Author
 
 let bookstoreApi = getApiProxy ()
 
@@ -67,6 +73,12 @@ let init (currentUrl: Url) : Model * Cmd<Msg> =
             return GotBookForDetails book
         }
         { CurrentUrl = currentUrl; CurrentPage = Page.Loading }, Cmd.OfAsync.result cmd
+    | Url.AuthorDetails guid ->
+        let cmd = async {
+            let! author = bookstoreApi.getAuthor guid
+            return GotAuthorForDetails author
+        }
+        { CurrentUrl = currentUrl; CurrentPage = Page.Loading }, Cmd.OfAsync.result cmd
     | Url.NotFound ->
         { CurrentUrl = currentUrl; CurrentPage = Page.NotFound }, Cmd.none
 
@@ -74,7 +86,10 @@ let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     match model.CurrentPage, msg with
     | _, GotBookForDetails book ->
         let detailsModel, cmd = BookDetails.init book
-        { model with CurrentPage = Page.BookDetails detailsModel}, Cmd.map BookDetailsMsg cmd 
+        { model with CurrentPage = Page.BookDetails detailsModel}, Cmd.map BookDetailsMsg cmd
+    | _, GotAuthorForDetails author ->
+        let detailsModel, cmd = AuthorDetails.init author
+        { model with CurrentPage = Page.AuthorDetails detailsModel}, Cmd.map AuthorDetailsMsg cmd 
     | Page.BookList bookModel, BooklistMsg bookMsg ->
         let updatedModel, cmd, intent = Booklist.update bookMsg bookModel
         match intent with
@@ -83,8 +98,11 @@ let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
         | Booklist.Intent.DoNothing ->
             { model with CurrentPage = Page.BookList updatedModel }, Cmd.map BooklistMsg cmd
     | Page.CreateAuthor authorModel, CreateAuthorMsg authorMsg ->
-        let newAuthorModel, cmd = CreateAuthor.update authorMsg authorModel
-        { model with CurrentPage = Page.CreateAuthor newAuthorModel }, Cmd.map CreateAuthorMsg cmd
+        match authorMsg with
+        | CreateAuthor.Msg.AddedAuthor author -> model, Cmd.ofMsg (SwitchToAuthorDetails author)
+        | _ ->
+            let newAuthorModel, cmd = CreateAuthor.update authorMsg authorModel
+            { model with CurrentPage = Page.CreateAuthor newAuthorModel }, Cmd.map CreateAuthorMsg cmd   
     | Page.CreateBook bookModel, CreateBookMsg bookMsg ->
         match bookMsg with
         | CreateBook.Msg.AddedBook book -> model, Cmd.ofMsg (SwitchToBookDetails book)
@@ -94,9 +112,15 @@ let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     | Page.BookDetails detailsModel, BookDetailsMsg detailsMsg ->
         let updatedDetailsModel, cmd = BookDetails.update detailsMsg detailsModel
         { model with CurrentPage = Page.BookDetails updatedDetailsModel}, Cmd.map BookDetailsMsg cmd
+    | Page.AuthorDetails detailsModel, AuthorDetailsMsg detailsMsg ->
+        let updatedDetailsModel, cmd = AuthorDetails.update detailsMsg detailsModel
+        { model with CurrentPage = Page.AuthorDetails updatedDetailsModel}, Cmd.map AuthorDetailsMsg cmd
     | _, SwitchToBookDetails book ->
         let newModel, cmd = BookDetails.init book
         { model with CurrentPage = Page.BookDetails newModel }, Cmd.map BookDetailsMsg cmd
+    | _, SwitchToAuthorDetails author ->
+        let newModel, cmd = AuthorDetails.init author
+        { model with CurrentPage = Page.AuthorDetails newModel }, Cmd.map AuthorDetailsMsg cmd
     | _, _ -> model, Cmd.none
 
 let navBrand =
@@ -122,43 +146,7 @@ let centered (children: ReactElement list) =
         ]
 
         prop.children children
-    ]
-
-let getNavbar () =
-    Bulma.navbarMenu [
-        Bulma.navbarStart.div [
-            Bulma.navbarItem.a [ prop.text "Home" ]
-            Bulma.navbarItem.a [ prop.text "Documentation" ]
-            Bulma.navbarItem.div [
-                Bulma.navbarItem.hasDropdown
-                Bulma.navbarItem.isHoverable
-                prop.children [
-                    Bulma.navbarLink.a [ prop.text "More" ]
-                    Bulma.navbarDropdown.div [
-                        Bulma.navbarItem.a [ prop.text "About" ]
-                        Bulma.navbarItem.a [ prop.text "Jobs" ]
-                        Bulma.navbarItem.a [ prop.text "Contact" ]
-                        Bulma.navbarDivider []
-                        Bulma.navbarItem.a [ prop.text "Report a issue" ]
-                    ]
-                ]
-            ]
-        ]
-        Bulma.navbarEnd.div [
-            Bulma.navbarItem.div [
-                Bulma.buttons [
-                    Bulma.button.a [
-                        Bulma.color.isPrimary
-                        prop.children [
-                            Html.strong "Sign up"
-                        ]
-                    ]
-                    Bulma.button.a [ prop.text "Log In" ]
-                ]
-            ]
-        ]
-    ]
-    
+    ]  
 
 let render (model:Model) (dispatch: Msg -> unit) =
     Bulma.container [
@@ -172,6 +160,7 @@ let render (model:Model) (dispatch: Msg -> unit) =
                 | Page.CreateAuthor model -> CreateAuthor.render model (Msg.CreateAuthorMsg >> dispatch)
                 | Page.CreateBook model -> CreateBook.render model (Msg.CreateBookMsg >> dispatch)
                 | Page.BookDetails model -> BookDetails.render model (Msg.BookDetailsMsg >> dispatch)
+                | Page.AuthorDetails model -> AuthorDetails.render model (Msg.AuthorDetailsMsg >> dispatch)
                 | Page.NotFound -> Html.h1 "Page not found"
             ]
         ]
