@@ -37,27 +37,51 @@ let update (msg: Msg) (model: Model) =
     | ShowBookDetails book ->
         model, Cmd.none, Intent.ShowBookDetails book
 
-let render (model: Model) (dispatch: Msg -> unit) =
-    Html.div [
-        prop.children [
-            Bulma.box [
-                Bulma.content [
-                    let booksTable =
-                        [ for book in model.Books -> 
-                            Html.tr [
-                                Html.td [ Html.text book.Title ]
-                                Html.td [
-                                    Html.button [
-                                        prop.text "Show"
-                                        prop.onClick (fun _ -> dispatch (ShowBookDetails book))
-                                    ]
-                                ]
-                            ]
-                        ]
-                    Bulma.table booksTable
+let getCardFromBook (dispatch: Msg -> unit) (book: Book)  =
+    Bulma.card [
+        Bulma.cardImage [
+            Bulma.image [
+                Bulma.image.is4by3
+                prop.children [
+                    Html.img [
+                        prop.alt "Placeholder image"
+                        prop.src "/book3.jpg"
+                    ]
                 ]
             ]
         ]
+        Bulma.cardContent [
+            Bulma.content [
+                    prop.children [
+                        Bulma.title.p [
+                            Bulma.title.is4
+                            prop.text book.Title
+                            prop.className "has-text-black-bis"
+                        ]
+                        Bulma.subtitle.p [
+                            Bulma.title.is6
+                            prop.text $"{book.Author.FirstName} {book.Author.LastName}"
+                            prop.className "has-text-black-bis"
+                        ]
+                    ]
+                ]           
+        ]
+        Bulma.cardFooter [
+            Bulma.cardFooterItem.a [
+                prop.text "Details"
+                prop.onClick (fun _ -> dispatch (ShowBookDetails book))
+            ]
+            Bulma.cardFooterItem.a [
+                prop.text "Delete"
+            ]
+        ]
+        Html.div [ prop.className "mb-4" ]
+    ]
+    
+
+let render (model: Model) (dispatch: Msg -> unit) =
+    Html.div [
+        prop.children (model.Books |> List.map (fun book -> getCardFromBook dispatch book))
     ]
 
 
