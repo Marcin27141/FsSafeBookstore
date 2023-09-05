@@ -29,24 +29,32 @@ type Page =
 | Booklist
 | CreateAuthor
 | CreateBook
+| EditBook of Guid
 | BookDetails of Guid
 | AuthorDetails of Guid
 | NotFound
 
-let getBooklistPrefix =
-    [|"booklist"|]
+
 
 let appendToBooklist suffix =
+    let getBooklistPrefix =
+        [|"booklist"|]
     Array.append getBooklistPrefix suffix
+
+let appendToBooksIndex suffix =
+    let getBooksIndexPrefix =
+        appendToBooklist [|"books"|]
+    Array.append getBooksIndexPrefix suffix
 
 let getUrlForPage (page: Page) =
     match page with
     | Login -> [|"login"|]
     | Home -> [|""|]
-    | Booklist -> appendToBooklist [|"books"|]
+    | Booklist -> appendToBooksIndex [||]
     | CreateAuthor -> appendToBooklist [|"create"; "authors"|]
-    | CreateBook -> appendToBooklist [|"create"; "books "|]
-    | BookDetails id -> appendToBooklist [|"books"; id.ToString() |]
+    | CreateBook -> appendToBooksIndex [|"create"|]
+    | EditBook id-> appendToBooksIndex [|"edit"; id.ToString()|]
+    | BookDetails id -> appendToBooksIndex [| id.ToString() |]
     | AuthorDetails id -> appendToBooklist [| "authors"; id.ToString() |]
     | NotFound -> [|"404"|]
 

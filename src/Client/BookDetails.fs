@@ -11,6 +11,11 @@ open Feliz.Router
 
 type Model = { Book: Book }
 
+[<RequireQualifiedAccess>]
+type Intent =
+    | EditBook of Book
+    | DoNothing
+
 type Msg =
     | Return
     | EditBook of Book
@@ -20,8 +25,8 @@ let init (book: Book) =
 
 let update (msg: Msg) (model: Model) =
     match msg with
-    | Return -> model, Cmd.navigate("booklist", "books")
-    | EditBook book -> model, Cmd.none
+    | Return -> model, Cmd.navigate("booklist", "books"), Intent.DoNothing
+    | EditBook book -> model, Cmd.none, Intent.EditBook book
 
 let getCardFromBook (dispatch: Msg -> unit) (book: Book)  =
     Bulma.card [

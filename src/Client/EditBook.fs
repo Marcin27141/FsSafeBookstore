@@ -13,6 +13,11 @@ open Feliz.Router
 
 type Model = { OldBook: Book; EditedBook: Option<Book>; Authors: Author list; TitleInput: string; AuthorId: string }
 
+[<RequireQualifiedAccess>]
+type Intent =
+    | ShowEditedBook of Book
+    | DoNothing
+
 type Msg =
     | GotAuthors of Author list
     | SetTitleInput of string
@@ -32,23 +37,23 @@ let update (msg: Msg) (model: Model) =
     match msg with
     | GotAuthors authors ->
         let newModel = { model with Authors = authors }
-        newModel, Cmd.none
+        newModel, Cmd.none, Intent.DoNothing
     | SetTitleInput value ->
         let newModel = { model with TitleInput = value }
-        newModel, Cmd.none
+        newModel, Cmd.none, Intent.DoNothing
     | SetAuthorId value ->
         let newModel = { model with AuthorId = value }
-        newModel, Cmd.none
+        newModel, Cmd.none, Intent.DoNothing
     | GetAuthor ->
         let cmd = Cmd.OfAsync.perform bookstoreApi.getAuthor (Guid.Parse(model.AuthorId)) EditBook
-        model, cmd
+        model, cmd, Intent.DoNothing
     | EditBook author ->
         let editedBook = Book.create (model.TitleInput, author)
         let editedBookWithOldId = { editedBook with Id = model.OldBook.Id }
         let cmd = Cmd.OfAsync.perform bookstoreApi.editBook (model.OldBook, editedBookWithOldId) EditedBook
-        { model with EditedBook = Some editedBookWithOldId }, cmd
+        { model with EditedBook = Some editedBookWithOldId }, cmd, Intent.DoNothing
     | EditedBook bool ->
-        model, Cmd.none
+        model, Cmd.none, Intent.ShowEditedBook model.EditedBook.Value
 
 let authorDropdownOptions (authors: Author list) =
     let placeholder =

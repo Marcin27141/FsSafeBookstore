@@ -9,7 +9,7 @@ open Fable
 open ViewUtils
 open System
 open Feliz.Bulma
-open ViewUtils
+open UrlLookup
 
 [<RequireQualifiedAccess>]
 type Page =
@@ -72,9 +72,9 @@ let update (msg: Msg) (model: Model) =
 let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
     let getNavbarStart () =
         Bulma.navbarStart.div [
-            Bulma.navbarItem.a [ prop.text "Booklist"; prop.href (Router.format(["booklist"; "books"])) ]
-            Bulma.navbarItem.a [ prop.text "Add book"; prop.href (Router.format(["booklist"; "create" ; "books"])) ]
-            Bulma.navbarItem.a [ prop.text "Add author"; prop.href (Router.format(["booklist"; "create" ; "authors"])) ]
+            Bulma.navbarItem.a [ prop.text "Booklist"; prop.href (Router.format(UrlLookup.getUrlForPage UrlLookup.Page.Booklist)) ]
+            Bulma.navbarItem.a [ prop.text "Add book"; prop.href (Router.format(UrlLookup.getUrlForPage UrlLookup.Page.CreateBook)) ]
+            Bulma.navbarItem.a [ prop.text "Add author"; prop.href (Router.format(UrlLookup.getUrlForPage UrlLookup.Page.CreateAuthor)) ]
             Bulma.navbarItem.a [ prop.text "Contact" ]
             Bulma.navbarItem.a [ prop.text "About" ]
         ]

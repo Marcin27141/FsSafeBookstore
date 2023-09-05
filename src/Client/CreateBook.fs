@@ -13,6 +13,11 @@ open Feliz.Router
 
 type Model = { Authors: Author list; TitleInput: string; AuthorId: string }
 
+[<RequireQualifiedAccess>]
+type Intent =
+    | ShowAddedBook of Book
+    | DoNothing
+
 type Msg =
     | GotAuthors of Author list
     | SetTitleInput of string
@@ -32,23 +37,23 @@ let update (msg: Msg) (model: Model) =
     match msg with
     | GotAuthors authors ->
         let newModel = { model with Authors = authors }
-        newModel, Cmd.none
+        newModel, Cmd.none, Intent.DoNothing
     | SetTitleInput value ->
         let newModel = { model with TitleInput = value }
-        newModel, Cmd.none
+        newModel, Cmd.none, Intent.DoNothing
     | SetAuthorId value ->
         let newModel = { model with AuthorId = value }
-        newModel, Cmd.none
+        newModel, Cmd.none, Intent.DoNothing
     | GetAuthor ->
         let cmd = Cmd.OfAsync.perform bookstoreApi.getAuthor (Guid.Parse(model.AuthorId)) AddBook
         let newModel = { model with AuthorId = "" }
-        newModel, cmd
+        newModel, cmd, Intent.DoNothing
     | AddBook author ->
         let book = Book.create (model.TitleInput, author)
         let cmd = Cmd.OfAsync.perform bookstoreApi.addBook book AddedBook
-        model, cmd
+        model, cmd, Intent.DoNothing
     | AddedBook book ->
-        model, Cmd.none
+        model, Cmd.none, Intent.ShowAddedBook book
 
 let authorDropdownOptions (authors: Author list) =
     let placeholder =
