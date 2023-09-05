@@ -41,8 +41,16 @@ type Intent =
     | LogoutUser of User
     | DoNothing
 
-let init(user: User) =
-    { User = user; CurrentPage = Page.Home; CurrentUrl = parseUrl(Router.currentUrl())}, Cmd.none
+let init(user: User, url: Url) =
+    let initialModel = { User = user; CurrentPage = Page.NotFound; CurrentUrl = url}
+    match url with
+    | Url.AfterLogin ->
+        { initialModel with CurrentPage = Page.Home }, Cmd.none
+    | Url.Booklist booklistUrl ->
+        let indexModel, indexCmd = Index.init booklistUrl
+        { initialModel with CurrentPage = Page.Index indexModel; }, Cmd.map IndexMsg indexCmd
+    | Url.NotFound ->
+        initialModel, Cmd.none
 
 let handleUrlChange url model =
     let getModelWithPageAndCmd =
@@ -51,7 +59,7 @@ let handleUrlChange url model =
             let indexModel, indexCmd = Index.init booklistUrl
             { model with CurrentPage = Page.Index indexModel; }, Cmd.map IndexMsg indexCmd
         | Url.AfterLogin ->
-            let homeModel, homeCmd = init (model.User)
+            let homeModel, homeCmd = init (model.User, Url.AfterLogin)
             homeModel, homeCmd
         | Url.NotFound -> { model with CurrentPage = Page.NotFound }, Cmd.none
     let updatedPage, cmd = getModelWithPageAndCmd

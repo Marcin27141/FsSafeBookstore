@@ -4,46 +4,73 @@ module LoginIndex
 open Feliz.Router
 open Elmish
 open UrlLookup
+open Shared
+open Feliz
+open Fable
+open Feliz.Bulma
 
 [<RequireQualifiedAccess>]
 type Page =
   | Login of Login.Model
   | Home of AfterLogin.Model
+  | AccessDenied
+
+[<RequireQualifiedAccess>]
+type Url =
+  | Login
+  | Home of AfterLogin.Url
 
 type Model =
-  { CurrentPage: Page }
+  { CurrentPage: Page; CurrentUrl : Url; User: Option<User> }
+
+let parseUrl = function
+    | ["login"] -> Url.Login
+    | url -> Url.Home (AfterLogin.parseUrl url)
 
 type Msg =
     | LoginMsg of Login.Msg
-    | HomeMsg of AfterLogin.Msg       
+    | HomeMsg of AfterLogin.Msg
+    | UrlChanged of Url
 
 let init() =
     let loginState, loginCmd = Login.init()
-    let cmdBatch = Cmd.batch [ Cmd.map LoginMsg loginCmd; Cmd.navigate(getUrlForPage UrlLookup.Page.Login) ] 
-    { CurrentPage = Page.Login loginState}, cmdBatch
+    let cmdBatch = Cmd.batch [ Cmd.map LoginMsg loginCmd; Cmd.navigate([|"login"|]) ]
+    { CurrentPage = Page.Login loginState; CurrentUrl = Url.Login; User = None }, cmdBatch
+
+let handleUrlChange url model =
+    let getModelWithPageAndCmd =
+        match url with
+        | Url.Home homeUrl when model.User.IsSome ->
+            let homeModel, homeCmd = AfterLogin.init (model.User.Value, homeUrl)
+            { model with CurrentPage = Page.Home homeModel}, Cmd.map HomeMsg homeCmd
+        | Url.Login ->
+            let loginModel, loginCmd = Login.init()
+            { model with CurrentPage = Page.Login loginModel}, Cmd.map LoginMsg loginCmd
+        | _ ->
+            { model with CurrentPage = Page.AccessDenied }, Cmd.none
+    let updatedPage, cmd = getModelWithPageAndCmd
+    { updatedPage with CurrentUrl = url}, cmd
 
 let updateLoginModel loginMsg loginModel model =
     let updatedLoginModel, loginCmd, intent = Login.update loginMsg loginModel
     match intent with
     | Login.Intent.UserLoggedIn user ->
-        let homeModel, homeCmd = AfterLogin.init user
-        let cmdBatch = Cmd.batch [ Cmd.map HomeMsg homeCmd; Cmd.navigate(getUrlForPage UrlLookup.Page.Home)]
-        { model with CurrentPage = Page.Home homeModel}, cmdBatch 
+        { model with User = Some user }, Cmd.navigate(getUrlForPage UrlLookup.Page.Home)
     | Login.Intent.DoNothing ->
         { model with CurrentPage = Page.Login updatedLoginModel }, Cmd.map LoginMsg loginCmd
 
 let updateHomeModel homeMsg homeModel model =
     let updatedModel, cmd, intent = AfterLogin.update homeMsg homeModel
     match intent with
-    | AfterLogin.Intent.LogoutUser user ->
-        let loginModel, loginCmd = Login.init()
-        let cmdBatch = Cmd.batch [ Cmd.map LoginMsg loginCmd; Cmd.navigate(getUrlForPage UrlLookup.Page.Login)]
-        { model with CurrentPage = Page.Login loginModel}, cmdBatch 
+    | AfterLogin.Intent.LogoutUser user ->       
+        { model with User = None}, Cmd.navigate(getUrlForPage UrlLookup.Page.Login) 
     | AfterLogin.Intent.DoNothing ->
         { model with CurrentPage = Page.Home updatedModel }, Cmd.map HomeMsg cmd
 
 let update (msg: Msg) (model: Model) =
     match msg, model.CurrentPage with
+    | UrlChanged url, _ ->
+        handleUrlChange url model
     | LoginMsg loginMsg, Page.Login loginModel ->
         updateLoginModel loginMsg loginModel model
     | HomeMsg homeMsg, Page.Home homeModel ->
@@ -51,7 +78,48 @@ let update (msg: Msg) (model: Model) =
     | _, _ ->
         model, Cmd.none
 
+let getAccessDeniedPage () =
+    Bulma.hero [
+        hero.isFullHeight
+        color.isPrimary
+        prop.style [
+            style.backgroundSize "cover"
+            style.backgroundImageUrl "/bookshelf.jpg"
+            style.backgroundPosition "no-repeat center center fixed"
+        ]
+        prop.children [
+            Bulma.heroBody [
+                Bulma.container [
+                    Bulma.column [
+                        column.is6
+                        column.isOffset3
+                        prop.children [
+                            Bulma.title [
+                                text.hasTextCentered
+                                prop.text "Access denied"
+                            ]
+                        ]
+                    ]
+                    Html.div [
+                        prop.style [
+                            style.margin.auto
+                            style.textAlign.center
+                            style.width (length.percent 100)
+                        ]
+                    ]
+                ]
+            ]
+        ]
+    ]
+
 let render (model: Model) (dispatch: Msg -> unit) =
-  match model.CurrentPage with
-  | Page.Login loginState -> Login.render loginState (LoginMsg >> dispatch)
-  | Page.Home homeState -> AfterLogin.render homeState (HomeMsg >> dispatch)
+    Html.div [
+        match model.CurrentPage with
+        | Page.Login loginState -> Login.render loginState (LoginMsg >> dispatch)
+        | Page.Home homeState -> AfterLogin.render homeState (HomeMsg >> dispatch)
+        | Page.AccessDenied -> getAccessDeniedPage ()    
+        React.router [
+            router.onUrlChanged (parseUrl >> UrlChanged >> dispatch)
+        ]
+    ]
+  
