@@ -9,6 +9,7 @@ open Fable
 open ViewUtils
 open System
 open Feliz.Bulma
+open ViewUtils
 
 [<RequireQualifiedAccess>]
 type Page =
@@ -23,7 +24,7 @@ type Url =
   | NotFound
 
 let parseUrl = function
-    | [ ] -> Url.AfterLogin
+    | [] -> Url.AfterLogin
     | "booklist" :: booklistSegment -> Url.Booklist (Index.parseUrl booklistSegment)
     | _ -> Url.NotFound
 
