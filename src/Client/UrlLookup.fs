@@ -33,7 +33,7 @@ let appendToAuthorsIndex suffix =
 let getUrlForPage (page: Page) =
     match page with
     | Login -> [|"login"|]
-    | Home -> [|""|]
+    | Home -> [|"home"|]
     | Booklist -> appendToBooksIndex [||]
     | Authorslist -> appendToAuthorsIndex [||]
     | CreateAuthor -> appendToAuthorsIndex [|"create"|]

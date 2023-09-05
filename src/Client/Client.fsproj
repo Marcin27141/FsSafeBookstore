@@ -23,6 +23,7 @@
         <Compile Include="Index.fs" />
         <Compile Include="Login.fs" />
         <Compile Include="AfterLogin.fs" />
+        <Compile Include="Welcome.fs" />
         <Compile Include="LoginIndex.fs" />
         <Compile Include="App.fs" />
     </ItemGroup>

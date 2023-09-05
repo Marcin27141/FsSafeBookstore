@@ -24,7 +24,7 @@ type Url =
   | NotFound
 
 let parseUrl = function
-    | [] -> Url.AfterLogin
+    | ["home"] -> Url.AfterLogin
     | "booklist" :: booklistSegment -> Url.Booklist (Index.parseUrl booklistSegment)
     | _ -> Url.NotFound
 

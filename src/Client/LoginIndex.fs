@@ -11,12 +11,14 @@ open Feliz.Bulma
 
 [<RequireQualifiedAccess>]
 type Page =
+  | Welcome
   | Login of Login.Model
   | Home of AfterLogin.Model
   | AccessDenied
 
 [<RequireQualifiedAccess>]
 type Url =
+  | Welcome
   | Login
   | Home of AfterLogin.Url
 
@@ -24,6 +26,7 @@ type Model =
   { CurrentPage: Page; CurrentUrl : Url; User: Option<User> }
 
 let parseUrl = function
+    | [] -> Url.Welcome
     | ["login"] -> Url.Login
     | url -> Url.Home (AfterLogin.parseUrl url)
 
@@ -33,13 +36,13 @@ type Msg =
     | UrlChanged of Url
 
 let init() =
-    let loginState, loginCmd = Login.init()
-    let cmdBatch = Cmd.batch [ Cmd.map LoginMsg loginCmd; Cmd.navigate([|"login"|]) ]
-    { CurrentPage = Page.Login loginState; CurrentUrl = Url.Login; User = None }, cmdBatch
+    { CurrentPage = Page.Welcome; CurrentUrl = Url.Welcome; User = None }, Cmd.none
 
 let handleUrlChange url model =
     let getModelWithPageAndCmd =
         match url with
+        | Url.Welcome ->
+            { model with CurrentPage = Page.Welcome }, Cmd.none
         | Url.Home homeUrl when model.User.IsSome ->
             let homeModel, homeCmd = AfterLogin.init (model.User.Value, homeUrl)
             { model with CurrentPage = Page.Home homeModel}, Cmd.map HomeMsg homeCmd
@@ -79,17 +82,7 @@ let update (msg: Msg) (model: Model) =
         model, Cmd.none
 
 let getAccessDeniedPage () =
-    Bulma.hero [
-        hero.isFullHeight
-        color.isPrimary
-        prop.style [
-            style.backgroundSize "cover"
-            style.backgroundImageUrl "/bookshelf.jpg"
-            style.backgroundPosition "no-repeat center center fixed"
-        ]
-        prop.children [
-            Bulma.heroBody [
-                Bulma.container [
+    Bulma.container [
                     Bulma.column [
                         column.is6
                         column.isOffset3
@@ -108,18 +101,101 @@ let getAccessDeniedPage () =
                         ]
                     ]
                 ]
+
+
+let getPreLoginLayout children =
+    let getNavbarStart () =
+        Bulma.navbarStart.div [
+            Bulma.navbarItem.a [ prop.text "Contact" ]
+            Bulma.navbarItem.a [ prop.text "About" ]
+        ]
+
+    let getNavbarEnd () =
+        Bulma.navbarEnd.div [
+            Bulma.navbarItem.div [
+                Bulma.buttons [
+                    Bulma.button.a [
+                        prop.className "button is-info"
+                        //prop.href (Router.format(""))
+                        prop.children [
+                            Html.strong "Register"
+                        ]
+                    ]
+                ]
+            ]
+            Bulma.navbarItem.div [
+                Bulma.buttons [
+                    Bulma.button.a [
+                        prop.className "button is-info"
+                        prop.href (Router.format("login"))
+                        prop.children [
+                            Html.strong "Login"
+                        ]
+                    ]
+                ]
+            ]
+        ]
+
+    Bulma.hero [
+        hero.isFullHeight
+        color.isPrimary
+        prop.style [
+            style.backgroundSize "cover"
+            style.backgroundImageUrl "/bookshelf.jpg"
+            style.backgroundPosition "no-repeat center center fixed"
+        ]
+        prop.children [
+            Bulma.heroHead [
+                Bulma.navbar [
+                    prop.children [
+                        Bulma.navbarBrand.div [
+                            Bulma.navbarItem.a [
+                                prop.href (Router.format([]))
+                                prop.children [
+                                    Html.img [ prop.src "https://bulma.io/images/bulma-logo-white.png"; prop.height 28; prop.width 112; ]
+                                ]
+                            ]
+                        ]
+                        Bulma.navbarMenu [
+                            getNavbarStart ()
+                            getNavbarEnd ()
+                        ]
+                    ]
+                ]
+            ]
+            Bulma.heroBody [
+                Bulma.container [
+                    Bulma.column [
+                        prop.children [
+                            children
+                        ]
+                    ]
+                    Html.div [
+                        prop.style [
+                            style.margin.auto
+                            style.textAlign.center
+                        ]
+                    ]
+                ]
             ]
         ]
     ]
 
 let render (model: Model) (dispatch: Msg -> unit) =
     Html.div [
-        match model.CurrentPage with
-        | Page.Login loginState -> Login.render loginState (LoginMsg >> dispatch)
-        | Page.Home homeState -> AfterLogin.render homeState (HomeMsg >> dispatch)
-        | Page.AccessDenied -> getAccessDeniedPage ()    
         React.router [
             router.onUrlChanged (parseUrl >> UrlChanged >> dispatch)
         ]
+        match model.CurrentPage with
+        | Page.Home homeState -> AfterLogin.render homeState (HomeMsg >> dispatch)
+        | _ ->
+            let children =
+                match model.CurrentPage with
+                | Page.Welcome -> Welcome.render
+                | Page.Login loginState -> Login.render loginState (LoginMsg >> dispatch)
+                | _ -> getAccessDeniedPage ()
+            getPreLoginLayout children        
     ]
+
+    
   
