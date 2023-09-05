@@ -6,6 +6,7 @@ open Feliz
 open Shared
 open Fable.Remoting.Client
 open ApiProxy
+open ViewUtils
 
 type Model =
     { Username: string
@@ -23,10 +24,6 @@ type Intent =
     | UserLoggedIn of User
     | DoNothing
 
-let (|UserLoggedIn|_|) = function
-    | Msg.GotLoginResult (LoggedIn user) -> Some user
-    | _ -> None
-
 let userApi = getApiProxy ()
 
 let init() =
@@ -34,6 +31,22 @@ let init() =
       Password = ""
       LoginProcess = LoginProcess.NotStarted }, Cmd.none
 
+let updateOnLoginResults loginResult model =
+    let nextModel = { model with LoginProcess = Finished loginResult }
+    let intent =
+        match loginResult with
+        | LoggedIn user -> Intent.UserLoggedIn user
+        | _ -> Intent.DoNothing
+    nextModel, Cmd.none, intent
+
+let sendLoginRequest model =
+    let nextModel = { model with LoginProcess = InProgress }
+    let cmd = async {
+        let! loginResult = userApi.login ({Username = model.Username; Password = model.Password})
+        return GotLoginResult loginResult
+    }
+    nextModel, Cmd.OfAsync.result cmd, Intent.DoNothing
+    
 let update (msg: Msg) (model: Model) =
     match msg with
     | UsernameChanged username ->
@@ -41,18 +54,9 @@ let update (msg: Msg) (model: Model) =
     | PasswordChanged password ->
         { model with Password = password }, Cmd.none, Intent.DoNothing
     | LoginStarted ->
-        let nextModel = { model with LoginProcess = InProgress }
-        let cmd = async {
-            let! loginResult = userApi.login ({Username = model.Username; Password = model.Password})
-            return GotLoginResult loginResult
-        }
-        nextModel, Cmd.OfAsync.result cmd, Intent.DoNothing
-    | GotLoginResult (LoggedIn user) ->
-        let nextModel = { model with LoginProcess = Finished (LoggedIn user) }
-        nextModel, Cmd.none, Intent.UserLoggedIn user
+        sendLoginRequest model
     | GotLoginResult loginResult ->
-        let nextModel = { model with LoginProcess = Finished loginResult }
-        nextModel, Cmd.none, Intent.DoNothing
+        updateOnLoginResults loginResult model
 
 let renderLoginOutcome (loginProcess: LoginProcess)=
     match loginProcess with
@@ -97,17 +101,6 @@ let layout (children: ReactElement list) =
                 ]
             ]
         ]
-    ]
-
-let centered (children: ReactElement list) =
-    Html.div [
-        prop.style [
-            style.margin.auto
-            style.textAlign.center
-            style.width (length.percent 100)
-        ]
-
-        prop.children children
     ]
 
 let render (model: Model) (dispatch: Msg -> unit) =

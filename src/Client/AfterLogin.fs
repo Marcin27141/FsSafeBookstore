@@ -43,27 +43,87 @@ type Intent =
 let init(user: User) =
     { User = user; CurrentPage = Page.Home; CurrentUrl = parseUrl(Router.currentUrl())}, Cmd.none
 
+let handleUrlChange url model =
+    let getModelWithPageAndCmd =
+        match url with
+        | Url.Booklist booklistUrl ->
+            let indexModel, indexCmd = Index.init booklistUrl
+            { model with CurrentPage = Page.Index indexModel; }, Cmd.map IndexMsg indexCmd
+        | Url.AfterLogin ->
+            let homeModel, homeCmd = init (model.User)
+            homeModel, homeCmd
+        | Url.NotFound -> { model with CurrentPage = Page.NotFound }, Cmd.none
+    let updatedPage, cmd = getModelWithPageAndCmd
+    { updatedPage with CurrentUrl = url}, cmd, Intent.DoNothing
+
 let update (msg: Msg) (model: Model) =
     match msg, model.CurrentPage with
     | UrlChanged url, _ ->
-        let getModelWithPageAndCmd =
-            match url with
-            | Url.Booklist booklistUrl ->
-                let indexModel, indexCmd = Index.init booklistUrl
-                { model with CurrentPage = Page.Index indexModel; },Cmd.map IndexMsg indexCmd
-            | Url.AfterLogin ->
-                let homeModel, homeCmd = init (model.User)
-                homeModel, homeCmd
-            | Url.NotFound -> { model with CurrentPage = Page.NotFound }, Cmd.none
-        let updatedPage, cmd = getModelWithPageAndCmd
-        { updatedPage with CurrentUrl = url}, cmd, Intent.DoNothing
-    | Logout, _ -> model, Cmd.none, Intent.LogoutUser model.User
+        handleUrlChange url model
+    | Logout, _ ->
+        model, Cmd.none, Intent.LogoutUser model.User
     | IndexMsg indexMsg, Page.Index indexModel ->
         let updatedIndexModel, indexCmd = Index.update indexMsg indexModel
         { model with CurrentPage = Page.Index updatedIndexModel }, Cmd.map IndexMsg indexCmd, Intent.DoNothing
-    | _, _ -> model, Cmd.none, Intent.DoNothing
+    | _, _ ->
+        model, Cmd.none, Intent.DoNothing
 
 let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
+    let getNavbarStart () =
+        Bulma.navbarStart.div [
+            Bulma.navbarItem.a [ prop.text "Booklist"; prop.href (Router.format(["booklist"; "books"])) ]
+            Bulma.navbarItem.a [ prop.text "Add book"; prop.href (Router.format(["booklist"; "create" ; "books"])) ]
+            Bulma.navbarItem.a [ prop.text "Add author"; prop.href (Router.format(["booklist"; "create" ; "authors"])) ]
+            Bulma.navbarItem.a [ prop.text "Contact" ]
+            Bulma.navbarItem.a [ prop.text "About" ]
+        ]
+
+    let getNavbarEnd () =
+        Bulma.navbarEnd.div [
+            Bulma.navbarItem.div [
+                Bulma.media [
+                    Bulma.mediaContent [
+                        Bulma.text.hasTextRight
+                        prop.children [
+                            Bulma.title.p [
+                                Bulma.text.hasTextWeightBold
+                                Bulma.title.is6
+                                prop.text model.User.Username
+                            ]
+                            Bulma.subtitle.p [
+                                Bulma.title.is6
+                                Bulma.text.hasTextWeightLight
+                                Bulma.color.hasTextGreyLighter
+                                prop.text $"@{model.User.Username.ToLower()}"
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+            Bulma.navbarItem.div [
+                Bulma.buttons [
+                    Bulma.button.a [
+                        prop.className "button is-info"
+                        prop.onClick (fun _ -> dispatch Logout)
+                        prop.children [
+                            Html.strong "Logout"
+                        ]
+                    ]
+                ]
+            ]
+        ]
+
+    let getPageContent () =
+        match model.CurrentPage with
+        | Page.Home -> Html.none
+        | Page.Index model -> Index.render model (Msg.IndexMsg >> dispatch)
+        | Page.NotFound ->
+            centered [
+                Html.h1 [
+                    Html.strong "Page not found"
+                ]
+            ]
+
     Bulma.hero [
         hero.isFullHeight
         color.isPrimary
@@ -85,47 +145,8 @@ let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
                             ]
                         ]
                         Bulma.navbarMenu [
-                            Bulma.navbarStart.div [
-                                Bulma.navbarItem.a [ prop.text "Booklist"; prop.href (Router.format(["booklist"; "books"])) ]
-                                Bulma.navbarItem.a [ prop.text "Add book"; prop.href (Router.format(["booklist"; "create" ; "books"])) ]
-                                Bulma.navbarItem.a [ prop.text "Add author"; prop.href (Router.format(["booklist"; "create" ; "authors"])) ]
-                                Bulma.navbarItem.a [ prop.text "Contact" ]
-                                Bulma.navbarItem.a [ prop.text "About" ]
-                            ]
-                            Bulma.navbarEnd.div [
-                                Bulma.navbarItem.div [
-                                    Bulma.media [
-                                        Bulma.mediaContent [
-                                            Bulma.text.hasTextRight
-                                            prop.children [
-                                                Bulma.title.p [
-                                                    Bulma.text.hasTextWeightBold
-                                                    Bulma.title.is6
-                                                    prop.text model.User.Username
-                                                ]
-                                                Bulma.subtitle.p [
-                                                    Bulma.title.is6
-                                                    Bulma.text.hasTextWeightLight
-                                                    Bulma.color.hasTextGreyLighter
-                                                    prop.text $"@{model.User.Username.ToLower()}"
-                                                ]
-                                            ]
-                                        ]
-                                    ]
-                                ]
-                                Bulma.navbarItem.div [
-                                    Bulma.buttons [
-                                        Bulma.button.a [
-                                            prop.className "button is-info"
-                                            prop.onClick (fun _ -> dispatch Logout)
-                                            prop.children [
-                                                Html.strong "Logout"
-                                            ]
-                                        ]
-
-                                    ]
-                                ]
-                            ]
+                            getNavbarStart ()
+                            getNavbarEnd ()
                         ]
                     ]
                 ]
@@ -140,15 +161,7 @@ let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
                                 text.hasTextCentered
                                 prop.text "FsSafeApplication"
                             ]
-                            match model.CurrentPage with
-                            | Page.Home -> Html.none
-                            | Page.Index model -> Index.render model (Msg.IndexMsg >> dispatch)
-                            | Page.NotFound ->
-                                centered [
-                                    Html.h1 [
-                                        Html.strong "Page not found"
-                                    ]
-                                ]
+                            getPageContent ()
                         ]
                     ]
                     Html.div [
