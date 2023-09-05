@@ -2,7 +2,10 @@ namespace Shared
 
 open System
 
+[<CLIMutable>]
 type Author = {Id: Guid; FirstName: string; LastName: string}
+
+[<CLIMutable>]
 type Book = { Id: Guid; Title: string; Author: Author }
 
 module Author =

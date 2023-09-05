@@ -5,68 +5,76 @@ open Shared
 open System
 open Fable.Remoting.Server
 open Fable.Remoting.Giraffe
+open LiteDB.FSharp
+open LiteDB
 
 module Storage =
-    let authors = ResizeArray()
-    let books = ResizeArray()
+    let database =
+        let mapper = FSharpBsonMapper()
+        let connStr = "Filename=Bookstore.db;mode=Exclusive"
+        new LiteDatabase (connStr, mapper)
+    let authors = database.GetCollection<Author> "authors"
+
+    let getAuthors () =
+        authors.FindAll () |> List.ofSeq
 
     let addAuthor (author: Author) =
         if Author.isValid (author.FirstName, author.LastName) then
-            authors.Add author
-            Ok()
+            authors.Insert author |> ignore
+            true
         else
-            Error "Invalid author"
+            false
+
+    let deleteAuthor (author: Author) =
+        authors.Delete author.Id
+
+    let editAuthor (oldAuthor: Author, editedAuthor: Author) =
+        if oldAuthor.Id = editedAuthor.Id then
+            match authors.Delete oldAuthor.Id with
+            | true ->
+                addAuthor editedAuthor
+            | _ -> false
+        else false
+
     do
-        addAuthor (Author.create ("William", "Shakespeare")) |> ignore
-        addAuthor (Author.create ("Adam", "Mickiewicz")) |> ignore
-        addAuthor (Author.create ("Juliusz", "Słowacki")) |> ignore
+        if getAuthors () |> Seq.isEmpty then
+            addAuthor (Author.create ("William", "Shakespeare")) |> ignore
+            addAuthor (Author.create ("Adam", "Mickiewicz")) |> ignore
+            addAuthor (Author.create ("Juliusz", "Słowacki")) |> ignore
+
+    let books = database.GetCollection<Book> "books"
+
+    let getBooks () =
+        books.FindAll () |> List.ofSeq
 
     let addBook (book: Book) =
         if Book.isValid (book.Title, book.Author) then
-            books.Add book
-            Ok()
+            books.Insert book|> ignore
+            true
         else
-            Error "Invalid book"
+            false
 
     let deleteBook (book: Book) =
-        if books.Contains book then
-            books.Remove book
-        else false
-
-    let deleteAuthor (author: Author) =
-        if authors.Contains author then
-            authors.Remove author
-        else false
-
-    let editAuthor (oldAuthor: Author, editedAuthor: Author) =
-        if authors.Contains oldAuthor && oldAuthor.Id = editedAuthor.Id then
-            authors.Remove oldAuthor |> ignore
-            authors.Add editedAuthor
-            true
-        else false
+        books.Delete book.Id
 
     let editBook (oldBook: Book, editedBook: Book) =
-        if books.Contains oldBook && oldBook.Id = editedBook.Id then
-            books.Remove oldBook |> ignore
-            books.Add editedBook
-            true
+        if oldBook.Id = editedBook.Id then
+            match books.Delete oldBook.Id with
+            | true ->
+                addBook editedBook
+            | _ -> false
         else false
-
-    //do
-    //    addBook (Book.create ("Hamlet", Author.create ("William", "Shakespeare"))) |> ignore
-    //    addBook (Book.create ("Pan Tadeusz", Author.create ("Adam", "Mickiewicz"))) |> ignore
-    //    addBook (Book.create ("Kordian", Author.create ("Juliusz", "Słowacki"))) |> ignore
 
 let authorsApi : IAuthorsApi =
     {
-        getAuthors = fun () -> async { return Storage.authors |> List.ofSeq }
+        getAuthors = fun () -> async { return Storage.getAuthors () }
         addAuthor =
             fun author ->
                 async {
                     return
                         match Storage.addAuthor author with
-                        | Ok () -> author
-                        | Error e -> failwith e
+                        | true -> author
+                        | false -> failwith "Error"
                 }
         deleteAuthor = fun author -> async { return Storage.deleteAuthor author }
         editAuthor =
@@ -78,20 +86,20 @@ let authorsApi : IAuthorsApi =
 
 let bookstoreIndexApi =
     {
-        getAuthor = fun id -> async { return Storage.authors |> Seq.find (fun (author: Author) -> author.Id = id) }
-        getBook = fun id -> async { return Storage.books |> Seq.find (fun (book: Book) -> book.Id = id) }
+        getAuthor = fun id -> async { return Storage.getAuthors () |> List.find (fun (author: Author) -> author.Id = id) }
+        getBook = fun id -> async { return Storage.getBooks () |> List.find (fun (book: Book) -> book.Id = id) }
     }
 
 let booksApi : IBooksApi =
     {
-        getBooks = fun () -> async { return Storage.books |> List.ofSeq }
+        getBooks = fun () -> async { return Storage.getBooks () }
         addBook =
             fun book ->
                 async {
                     return
                         match Storage.addBook book with
-                        | Ok () -> book
-                        | Error e -> failwith e
+                        | true -> book
+                        | false -> failwith "Error"
                 }
         deleteBook = fun book -> async { return Storage.deleteBook book }
         editBook =
@@ -100,9 +108,6 @@ let booksApi : IBooksApi =
                     return Storage.editBook (oldBook, editedBook)
                 }
     }
-
-
-
 
 let userApi =
     { login =
@@ -133,8 +138,6 @@ let serverApi =
         login = userApi.login
     }
 
-//type apiType = Giraffe.Core.HttpFunc -> AspNetCore.Http.HttpContext -> Giraffe.Core.HttpFuncResult
-
 let bookstoreApp =
     Remoting.createApi ()
     |> Remoting.withRouteBuilder Shared.Route.builder
@@ -153,11 +156,3 @@ let app =
 let main _ =
     run app
     0
-
-
-//let apiRouter : apiType =
-//    choose [
-//        route "/api/login"    >=> userApp
-//        route "/api/authors"    >=> bookstoreApp
-//        route "/api/test" >=> testApp
-//    ]

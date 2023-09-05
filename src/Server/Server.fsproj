@@ -10,6 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Fable.Fetch" Version="2.6.0" />
+    <PackageReference Include="LiteDB.FSharp" Version="2.16.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Shared\Shared.fsproj" />
