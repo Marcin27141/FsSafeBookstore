@@ -18,7 +18,7 @@ let init (author: Author) =
 
 let update (msg: Msg) (model: Model) =
     match msg with
-    | Return -> model, Cmd.navigate("booklist", "books")
+    | Return -> model, Cmd.navigate("booklist", "authors")
 
 let render (model: Model) (dispatch: Msg -> unit) =
     Html.div [

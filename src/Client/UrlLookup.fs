@@ -3,38 +3,17 @@ module UrlLookup
 open System
 open Feliz.Router
 
-[<RequireQualifiedAccess>]
-type IndexUrl =
-  | BooklistUrl
-  | CreateAuthorUrl
-  | CreateBookUrl
-  | BookDetailsUrl
-  | AuthorDetailsUrl
-
-[<RequireQualifiedAccess>]
-type HomeUrl =
-  | Home
-  | IndexUrl of IndexUrl
-  | NotFoundUrl
-
-[<RequireQualifiedAccess>]
-type Url =
-  | AfterLoginUrl of HomeUrl
-  | LoginUrl
-  | NotFoundUrl
-
 type Page =
 | Login
 | Home
 | Booklist
+| Authorslist
 | CreateAuthor
 | CreateBook
 | EditBook of Guid
 | BookDetails of Guid
 | AuthorDetails of Guid
 | NotFound
-
-
 
 let appendToBooklist suffix =
     let getBooklistPrefix =
@@ -56,6 +35,7 @@ let getUrlForPage (page: Page) =
     | Login -> [|"login"|]
     | Home -> [|""|]
     | Booklist -> appendToBooksIndex [||]
+    | Authorslist -> appendToAuthorsIndex [||]
     | CreateAuthor -> appendToAuthorsIndex [|"create"|]
     | CreateBook -> appendToBooksIndex [|"create"|]
     | EditBook id-> appendToBooksIndex [|"edit"; id.ToString()|]

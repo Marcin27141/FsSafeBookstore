@@ -80,7 +80,8 @@ let update (msg: Msg) (model: Model) =
 let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
     let getNavbarStart () =
         Bulma.navbarStart.div [
-            Bulma.navbarItem.a [ prop.text "Booklist"; prop.href (Router.format(UrlLookup.getUrlForPage UrlLookup.Page.Booklist)) ]
+            Bulma.navbarItem.a [ prop.text "Books"; prop.href (Router.format(UrlLookup.getUrlForPage UrlLookup.Page.Booklist)) ]
+            Bulma.navbarItem.a [ prop.text "Authors"; prop.href (Router.format(UrlLookup.getUrlForPage UrlLookup.Page.Authorslist)) ]
             Bulma.navbarItem.a [ prop.text "Add book"; prop.href (Router.format(UrlLookup.getUrlForPage UrlLookup.Page.CreateBook)) ]
             Bulma.navbarItem.a [ prop.text "Add author"; prop.href (Router.format(UrlLookup.getUrlForPage UrlLookup.Page.CreateAuthor)) ]
             Bulma.navbarItem.a [ prop.text "Contact" ]
