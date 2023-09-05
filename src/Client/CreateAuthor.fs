@@ -13,6 +13,11 @@ open System
 
 type Model = { FirstNameInput: string; LastNameInput: string }
 
+[<RequireQualifiedAccess>]
+type Intent =
+    | ShowAddedAuthor of Author
+    | DoNothing
+
 type Msg =
     | SetFirstNameInput of string
     | SetLastNameInput of string
@@ -29,16 +34,16 @@ let update (msg: Msg) (model: Model) =
     match msg with
     | SetFirstNameInput value ->
         let newModel = { model with FirstNameInput = value }
-        newModel, Cmd.none
+        newModel, Cmd.none, Intent.DoNothing
     | SetLastNameInput value ->
         let newModel = { model with LastNameInput = value }
-        newModel, Cmd.none
+        newModel, Cmd.none, Intent.DoNothing
     | AddAuthor ->
         let author = Author.create (model.FirstNameInput, model.LastNameInput)
         let cmd = Cmd.OfAsync.perform bookstoreApi.addAuthor author AddedAuthor
-        model, cmd 
-    | AddedAuthor _ ->
-        model, Cmd.none
+        model, cmd, Intent.DoNothing
+    | AddedAuthor author ->
+        model, Cmd.none, Intent.ShowAddedAuthor author
 
 let render (model: Model) (dispatch: Msg -> unit) =
     Html.div [

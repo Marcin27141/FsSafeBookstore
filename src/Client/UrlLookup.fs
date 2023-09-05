@@ -46,16 +46,21 @@ let appendToBooksIndex suffix =
         appendToBooklist [|"books"|]
     Array.append getBooksIndexPrefix suffix
 
+let appendToAuthorsIndex suffix =
+    let getAuthorsIndexPrefix =
+        appendToBooklist [|"authors"|]
+    Array.append getAuthorsIndexPrefix suffix
+
 let getUrlForPage (page: Page) =
     match page with
     | Login -> [|"login"|]
     | Home -> [|""|]
     | Booklist -> appendToBooksIndex [||]
-    | CreateAuthor -> appendToBooklist [|"create"; "authors"|]
+    | CreateAuthor -> appendToAuthorsIndex [|"create"|]
     | CreateBook -> appendToBooksIndex [|"create"|]
     | EditBook id-> appendToBooksIndex [|"edit"; id.ToString()|]
     | BookDetails id -> appendToBooksIndex [| id.ToString() |]
-    | AuthorDetails id -> appendToBooklist [| "authors"; id.ToString() |]
+    | AuthorDetails id -> appendToAuthorsIndex [| id.ToString() |]
     | NotFound -> [|"404"|]
 
 //let getPageForUrl url =
