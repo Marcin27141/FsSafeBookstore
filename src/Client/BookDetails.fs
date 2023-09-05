@@ -73,22 +73,7 @@ let render (model: Model) (dispatch: Msg -> unit) =
             style.textAlign.center
             style.width (length.percent 100)
         ]
-
         prop.children [
-            //let bookTableRows =
-            //    [ Html.tr [
-            //            Html.td [ Html.p "Title" ]
-            //            Html.td [ Html.h3 model.Book.Title ]
-            //            ] ;
-            //    Html.tr [
-            //            Html.td [ Html.p "Author" ]
-            //            Html.td [ Html.h3 (sprintf "%s %s" model.Book.Author.FirstName model.Book.Author.LastName) ]
-            //            ]]
-            //Bulma.box [    
-            //    Bulma.content [
-            //        Bulma.table bookTableRows
-            //        ]
-            //    ]
             getCardFromBook dispatch model.Book
             Html.div [ prop.style [style.marginTop 30 ]]
             Bulma.button.a [

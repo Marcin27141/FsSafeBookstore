@@ -30,7 +30,7 @@ type Url =
 let parseUrl = function
     | [] -> Url.Booklist
     | [ "create" ] -> Url.CreateBook
-    | [ "edit"; Route.Guid bookId ] -> Url.BookDetails bookId
+    | [ "edit"; Route.Guid bookId ] -> Url.EditBook bookId
     | [ Route.Guid bookId ] -> Url.BookDetails bookId
     | _ -> Url.NotFound
 
@@ -102,8 +102,7 @@ let updateBookDetailskModel msg bookDetailsModel model =
     let updatedModel = { model with CurrentPage = Page.BookDetails updatedDetailsModel }
     match intent with
     | BookDetails.Intent.EditBook book ->
-        let editModel, cmd = EditBook.init book
-        { model with CurrentPage = Page.EditBook editModel }, Cmd.map EditBookMsg cmd
+        model, Cmd.navigate("booklist", "books", "edit", book.Id.ToString() )
     | BookDetails.Intent.DoNothing ->
         updatedModel, Cmd.map BookDetailsMsg cmd
 
@@ -124,8 +123,10 @@ let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     | Page.EditBook editModel, EditBookMsg editMsg ->
         updateEditBookModel editMsg editModel model
     | _, SwitchToBookDetails book ->
-        let newModel, cmd = BookDetails.init book
-        { model with CurrentPage = Page.BookDetails newModel }, Cmd.map BookDetailsMsg cmd
+        //let newModel, cmd = BookDetails.init book
+        //let cmdBatch = Cmd.batch [ Cmd.map BookDetailsMsg cmd; Cmd.navigate("booklist", "books", book.Id.ToString() ) ]
+        //{ model with CurrentPage = Page.BookDetails newModel }, cmdBatch
+        model, Cmd.navigate("booklist", "books", book.Id.ToString() )
     | _, _ -> model, Cmd.none
 
 let render (model:Model) (dispatch: Msg -> unit) =

@@ -97,8 +97,7 @@ let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     | Page.AuthorDetails detailsModel, AuthorDetailsMsg detailsMsg ->
         updateAuthorDetailsModel detailsMsg detailsModel model
     | _, SwitchToAuthorDetails author ->
-        let newModel, cmd = AuthorDetails.init author
-        { model with CurrentPage = Page.AuthorDetails newModel }, Cmd.map AuthorDetailsMsg cmd
+        model, Cmd.navigate("booklist", "authors", author.Id.ToString() )
     | _, _ -> model, Cmd.none
 
 let render (model:Model) (dispatch: Msg -> unit) =

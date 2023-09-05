@@ -20,6 +20,39 @@ let update (msg: Msg) (model: Model) =
     match msg with
     | Return -> model, Cmd.navigate("booklist", "authors")
 
+let getCardFromAuthor (dispatch: Msg -> unit) (author: Author)  =
+    Bulma.card [
+        Bulma.cardImage [
+            Bulma.image [
+                Bulma.image.is4by3
+                prop.children [
+                    Html.img [
+                        prop.alt "Placeholder image"
+                        prop.src "/personIcon.jpg"
+                    ]
+                ]
+            ]
+        ]
+        Bulma.cardContent [
+            Bulma.content [
+                    prop.children [
+                        Bulma.title.p [
+                            Bulma.title.is4
+                            prop.text $"{author.FirstName} {author.LastName}"
+                            prop.className "has-text-black-bis"
+                        ]
+                    ]
+                ]           
+        ]
+        Bulma.cardFooter [
+            Bulma.cardFooterItem.a [
+                prop.text "Edit"
+                //prop.onClick (fun _ -> dispatch (EditBook book))
+            ]
+        ]
+        Html.div [ prop.className "mb-4" ]
+    ]
+
 let render (model: Model) (dispatch: Msg -> unit) =
     Html.div [
         prop.style [
@@ -29,20 +62,7 @@ let render (model: Model) (dispatch: Msg -> unit) =
         ]
 
         prop.children [
-            let bookTableRows =
-                [ Html.tr [
-                        Html.td [ Html.p "First name" ]
-                        Html.td [ Html.h3 model.Author.FirstName ]
-                        ] ;
-                Html.tr [
-                        Html.td [ Html.p "Last name" ]
-                        Html.td [ Html.h3 model.Author.LastName ]
-                        ]]
-            Bulma.box [    
-                Bulma.content [
-                    Bulma.table bookTableRows
-                    ]
-                ]
+            getCardFromAuthor dispatch model.Author
             Html.div [ prop.style [style.marginTop 30 ]]
             Bulma.button.a [
                 color.isInfo
