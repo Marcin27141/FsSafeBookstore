@@ -123,9 +123,6 @@ let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     | Page.EditBook editModel, EditBookMsg editMsg ->
         updateEditBookModel editMsg editModel model
     | _, SwitchToBookDetails book ->
-        //let newModel, cmd = BookDetails.init book
-        //let cmdBatch = Cmd.batch [ Cmd.map BookDetailsMsg cmd; Cmd.navigate("booklist", "books", book.Id.ToString() ) ]
-        //{ model with CurrentPage = Page.BookDetails newModel }, cmdBatch
         model, Cmd.navigate("booklist", "books", book.Id.ToString() )
     | _, _ -> model, Cmd.none
 

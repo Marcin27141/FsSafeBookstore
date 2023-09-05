@@ -16,18 +16,21 @@ type Page =
     | AuthorDetails of AuthorDetails.Model
     | Authorslist of Authorslist.Model
     | CreateAuthor of CreateAuthor.Model
+    | EditAuthor of EditAuthor.Model
     | NotFound
 
 [<RequireQualifiedAccess>]
 type Url =
   | CreateAuthor
   | Authorslist
+  | EditAuthor of Guid
   | AuthorDetails of Guid
   | NotFound
 
 let parseUrl = function
     | [] -> Url.Authorslist
     | [ "create" ] -> Url.CreateAuthor
+    | [ "edit"; Route.Guid authorId ] -> Url.EditAuthor authorId
     | [ Route.Guid authorId ] -> Url.AuthorDetails authorId
     | _ -> Url.NotFound
 
@@ -37,7 +40,9 @@ type Msg =
     | CreateAuthorMsg of CreateAuthor.Msg
     | AuthorslistMsg of Authorslist.Msg
     | AuthorDetailsMsg of AuthorDetails.Msg
+    | EditAuthorMsg of EditAuthor.Msg
     | GotAuthorForDetails of Author
+    | GotAuthorForEdit of Author
     | SwitchToAuthorDetails of Author
 
 let bookstoreApi = getApiProxy ()
@@ -60,6 +65,8 @@ let init (currentUrl: Url) : Model * Cmd<Msg> =
         { modelWithUrl with CurrentPage = Page.CreateAuthor model}, Cmd.map CreateAuthorMsg cmd
     | Url.AuthorDetails id ->
         loadAuthorFromApi modelWithUrl id Msg.GotAuthorForDetails
+    | Url.EditAuthor id ->
+        loadAuthorFromApi modelWithUrl id Msg.GotAuthorForEdit
     | Url.NotFound ->
         modelWithUrl, Cmd.none
 
@@ -73,8 +80,13 @@ let updateCreateAuthorModel msg createModel model =
         updatedModel, Cmd.map CreateAuthorMsg cmd
 
 let updateAuthorDetailsModel msg authorDetailsModel model =
-    let updatedDetailsModel, cmd = AuthorDetails.update msg authorDetailsModel
-    { model with CurrentPage = Page.AuthorDetails updatedDetailsModel }, Cmd.map AuthorDetailsMsg cmd
+    let updatedDetailsModel, cmd, intent = AuthorDetails.update msg authorDetailsModel
+    let updatedModel = { model with CurrentPage = Page.AuthorDetails updatedDetailsModel }
+    match intent with
+    | AuthorDetails.Intent.EditAuthor author ->
+        model, Cmd.navigate("booklist", "authors", "edit", author.Id.ToString() )
+    | AuthorDetails.Intent.DoNothing ->
+        updatedModel, Cmd.map AuthorDetailsMsg cmd
     
 let updateAuthorslistModel msg authorslistModel model =
     let updatedAuthorslistModel, cmd, intent = Authorslist.update msg authorslistModel
@@ -85,8 +97,20 @@ let updateAuthorslistModel msg authorslistModel model =
     | Authorslist.Intent.DoNothing ->
         updatedModel, Cmd.map AuthorslistMsg cmd
 
+let updateEditAuthorModel msg editAuthorModel model =
+    let updatedEditModel, cmd, intent = EditAuthor.update msg editAuthorModel
+    let updatedModel = { model with CurrentPage = Page.EditAuthor updatedEditModel}
+    match intent with
+    | EditAuthor.Intent.ShowEditedAuthor author ->
+        updatedModel, Cmd.ofMsg (SwitchToAuthorDetails author)
+    | EditAuthor.Intent.DoNothing ->
+        updatedModel, Cmd.map EditAuthorMsg cmd
+
 let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     match model.CurrentPage, msg with
+    | _, GotAuthorForEdit author ->
+        let editModel, cmd = EditAuthor.init author
+        { model with CurrentPage = Page.EditAuthor editModel}, Cmd.map EditAuthorMsg cmd
     | _, GotAuthorForDetails author ->
         let detailsModel, cmd = AuthorDetails.init author
         { model with CurrentPage = Page.AuthorDetails detailsModel}, Cmd.map AuthorDetailsMsg cmd
@@ -96,6 +120,8 @@ let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
         updateCreateAuthorModel authorMsg authorModel model
     | Page.AuthorDetails detailsModel, AuthorDetailsMsg detailsMsg ->
         updateAuthorDetailsModel detailsMsg detailsModel model
+    | Page.EditAuthor editModel, EditAuthorMsg editMsg ->
+        updateEditAuthorModel editMsg editModel model
     | _, SwitchToAuthorDetails author ->
         model, Cmd.navigate("booklist", "authors", author.Id.ToString() )
     | _, _ -> model, Cmd.none
@@ -106,4 +132,5 @@ let render (model:Model) (dispatch: Msg -> unit) =
     | Page.Loading -> Html.div [ Bulma.pageLoader.isActive ]
     | Page.CreateAuthor model -> CreateAuthor.render model (Msg.CreateAuthorMsg >> dispatch)
     | Page.AuthorDetails model -> AuthorDetails.render model (Msg.AuthorDetailsMsg >> dispatch)
+    | Page.EditAuthor model -> EditAuthor.render model (Msg.EditAuthorMsg >> dispatch)
     | Page.NotFound -> Html.h1 "Page not found"

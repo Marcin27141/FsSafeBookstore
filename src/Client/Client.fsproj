@@ -8,6 +8,7 @@
         <Compile Include="UrlLookup.fs" />
         <Compile Include="ViewUtils.fs" />
         <Compile Include="ApiProxy.fs" />
+        <Compile Include="EditAuthor.fs" />
         <Compile Include="Authorslist.fs" />
         <Compile Include="AuthorDetails.fs" />
         <Compile Include="CreateAuthor.fs" />
