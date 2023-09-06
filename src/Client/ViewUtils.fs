@@ -2,6 +2,7 @@ module ViewUtils
 
 open Fable.React
 open Feliz
+open Feliz.Bulma
 
 let centered (children: ReactElement list) =
     Html.div [
@@ -13,4 +14,10 @@ let centered (children: ReactElement list) =
         ]
 
         prop.children children
+    ]
+
+let getPageNotFoundContent () =
+    Bulma.title [
+        text.hasTextCentered
+        prop.text "Page not found"
     ]

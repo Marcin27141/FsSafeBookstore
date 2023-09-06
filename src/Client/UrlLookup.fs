@@ -42,17 +42,3 @@ let getUrlForPage (page: Page) =
     | BookDetails id -> appendToBooksIndex [| id.ToString() |]
     | AuthorDetails id -> appendToAuthorsIndex [| id.ToString() |]
     | NotFound -> [|"404"|]
-
-//let getPageForUrl url =
-//    let getBooklistPrefixList ()= List.ofArray getBooklistPrefix
-//    let appendBooklistPrefix suffix = (List.ofArray getBooklistPrefix) @ suffix
-//    let appendBooklistPrefixWithGuid suffix = (List.ofArray getBooklistPrefix) @ suffix
-//    match url with
-//    | ["login"] -> Login
-//    | [""] -> Home
-//    | _ when url = appendBooklistPrefix ["books"] -> Booklist
-//    | _ when url = appendBooklistPrefix ["create"; "authors"] -> CreateAuthor
-//    | _ when url = appendBooklistPrefix ["create"; "books "] -> CreateBook
-//    | prefix :: ["books" :: id] when prefix = getBooklistPrefixList () &&  appendBooklistPrefix ["books"; id ] -> BookDetails bookId
-//    | _ when url = appendBooklistPrefix [ "authors"; Route.Guid authorId ] -> AuthorDetails authorId
-//    | _ -> NotFound

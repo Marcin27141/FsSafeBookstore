@@ -19,7 +19,7 @@ module Storage =
         authors.FindAll () |> List.ofSeq
 
     let getAuthor authorId =
-        getAuthors () |> List.find (fun (author: Author) -> author.Id = authorId)
+        getAuthors () |> List.tryFind (fun (author: Author) -> author.Id = authorId)
 
     let addAuthor (author: Author) =
         if Author.isValid (author.FirstName, author.LastName) then
@@ -83,7 +83,7 @@ module Storage =
         books.FindAll () |> List.ofSeq
 
     let getBook bookId =
-        getBooks () |> List.find (fun (book: Book) -> book.Id = bookId)
+        getBooks () |> List.tryFind (fun (book: Book) -> book.Id = bookId)
 
     let addBook (book: Book) =
         if Book.isValid (book.Title, book.Author) then

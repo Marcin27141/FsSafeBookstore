@@ -22,7 +22,7 @@ type Msg =
     | GotAuthors of Author list
     | SetTitleInput of string
     | SetAuthorId of string
-    | AddBook of Author
+    | AddBook of Option<Author>
     | AddedBook of Book
     | GetAuthor
 
@@ -49,7 +49,7 @@ let update (msg: Msg) (model: Model) =
         let newModel = { model with AuthorId = "" }
         newModel, cmd, Intent.DoNothing
     | AddBook author ->
-        let book = Book.create (model.TitleInput, author)
+        let book = Book.create (model.TitleInput, author.Value)
         let cmd = Cmd.OfAsync.perform bookstoreApi.addBook book AddedBook
         model, cmd, Intent.DoNothing
     | AddedBook book ->

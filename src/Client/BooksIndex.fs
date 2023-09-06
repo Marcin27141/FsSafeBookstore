@@ -1,6 +1,7 @@
 [<RequireQualifiedAccess>]
 module BooksIndex
 
+open ViewUtils
 open Elmish
 open Fable.Remoting.Client
 open Shared
@@ -42,8 +43,8 @@ type Msg =
     | EditBookMsg of EditBook.Msg
     | BookDetailsMsg of BookDetails.Msg
     | SwitchToBookDetails of Book
-    | GotBookForDetails of Book
-    | GotBookForEdit of Book
+    | GotBookForDetails of Option<Book>
+    | GotBookForEdit of Option<Book>
 
 let bookstoreApi = getApiProxy ()
 
@@ -109,11 +110,19 @@ let updateBookDetailskModel msg bookDetailsModel model =
 let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     match model.CurrentPage, msg with
     | _, GotBookForEdit book ->
-        let editModel, cmd = EditBook.init book
-        { model with CurrentPage = Page.EditBook editModel}, Cmd.map EditBookMsg cmd
+        match book with
+        | Some bookValue ->
+            let editModel, cmd = EditBook.init bookValue
+            { model with CurrentPage = Page.EditBook editModel}, Cmd.map EditBookMsg cmd
+        | None ->
+            { model with CurrentPage = Page.NotFound }, Cmd.none
     | _, GotBookForDetails book ->
-        let detailsModel, cmd = BookDetails.init book
-        { model with CurrentPage = Page.BookDetails detailsModel}, Cmd.map BookDetailsMsg cmd
+        match book with
+        | Some bookValue ->
+            let detailsModel, cmd = BookDetails.init bookValue
+            { model with CurrentPage = Page.BookDetails detailsModel}, Cmd.map BookDetailsMsg cmd
+        | None ->
+            { model with CurrentPage = Page.NotFound }, Cmd.none
     | Page.BookList bookModel, BooklistMsg bookMsg ->
         updateBooklistModel bookMsg bookModel model
     | Page.CreateBook bookModel, CreateBookMsg bookMsg ->
@@ -133,4 +142,4 @@ let render (model:Model) (dispatch: Msg -> unit) =
     | Page.CreateBook model -> CreateBook.render model (Msg.CreateBookMsg >> dispatch)
     | Page.EditBook model -> EditBook.render model (Msg.EditBookMsg >> dispatch)
     | Page.BookDetails model -> BookDetails.render model (Msg.BookDetailsMsg >> dispatch)
-    | Page.NotFound -> Html.h1 "Page not found"
+    | Page.NotFound -> getPageNotFoundContent ()

@@ -98,7 +98,7 @@ let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
                             Bulma.title.p [
                                 Bulma.text.hasTextWeightBold
                                 Bulma.title.is6
-                                prop.text model.User.Username
+                                prop.text $"{model.User.FirstName} {model.User.LastName}"
                             ]
                             Bulma.subtitle.p [
                                 Bulma.title.is6
@@ -125,14 +125,14 @@ let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
 
     let getPageContent () =
         match model.CurrentPage with
-        | Page.Home -> Html.none
+        | Page.Home ->
+            Bulma.title [
+                text.hasTextCentered
+                prop.text "F# SAFE Application"
+            ]
         | Page.Index model -> Index.render model (Msg.IndexMsg >> dispatch)
         | Page.NotFound ->
-            centered [
-                Html.h1 [
-                    Html.strong "Page not found"
-                ]
-            ]
+            getPageNotFoundContent ()
 
     Bulma.hero [
         hero.isFullHeight
@@ -167,10 +167,6 @@ let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
                         column.is6
                         column.isOffset3
                         prop.children [
-                            Bulma.title [
-                                text.hasTextCentered
-                                prop.text "FsSafeApplication"
-                            ]
                             getPageContent ()
                         ]
                     ]

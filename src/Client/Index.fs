@@ -1,6 +1,7 @@
 [<RequireQualifiedAccess>]
 module Index
 
+open ViewUtils
 open Elmish
 open Fable.Remoting.Client
 open Shared
@@ -69,7 +70,7 @@ let render (model:Model) (dispatch: Msg -> unit) =
                 | Page.Loading -> Html.div [ Bulma.pageLoader.isActive ]
                 | Page.BooksIndex model -> BooksIndex.render model (Msg.BooksIndexMsg >> dispatch)
                 | Page.AuthorsIndex model -> AuthorsIndex.render model (Msg.AuthorsIndexMsg >> dispatch)
-                | Page.NotFound -> Html.h1 "Page not found"
+                | Page.NotFound -> getPageNotFoundContent ()
             ]
         ]
     ]

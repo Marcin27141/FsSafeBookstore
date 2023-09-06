@@ -22,7 +22,7 @@ type Msg =
     | GotAuthors of Author list
     | SetTitleInput of string
     | SetAuthorId of string
-    | EditBook of Author
+    | EditBook of Option<Author>
     | EditedBook of bool
     | GetAuthor
 
@@ -48,7 +48,7 @@ let update (msg: Msg) (model: Model) =
         let cmd = Cmd.OfAsync.perform bookstoreApi.getAuthor (Guid.Parse(model.AuthorId)) EditBook
         model, cmd, Intent.DoNothing
     | EditBook author ->
-        let editedBook = Book.create (model.TitleInput, author)
+        let editedBook = Book.create (model.TitleInput, author.Value)
         let editedBookWithOldId = { editedBook with Id = model.OldBook.Id }
         let cmd = Cmd.OfAsync.perform bookstoreApi.editBook (model.OldBook, editedBookWithOldId) EditedBook
         { model with EditedBook = Some editedBookWithOldId }, cmd, Intent.DoNothing

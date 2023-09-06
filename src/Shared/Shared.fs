@@ -67,8 +67,8 @@ type IBooksApi =
 
 type IBookstoreIndexApi =
     {
-        getAuthor: Guid -> Async<Author>
-        getBook: Guid -> Async<Book>
+        getAuthor: Guid -> Async<Option<Author>>
+        getBook: Guid -> Async<Option<Book>>
     }
 
 type RegisterRequest = {
@@ -110,11 +110,11 @@ type IUserApi =
 type IServerApi =
     {
       getBooks: unit -> Async<Book list>
-      getBook: Guid -> Async<Book>
+      getBook: Guid -> Async<Option<Book>>
       addBook: Book -> Async<Book>
       editBook: Book * Book -> Async<bool>
       deleteBook: Book -> Async<bool>
-      getAuthor: Guid -> Async<Author>
+      getAuthor: Guid -> Async<Option<Author>>
       getAuthors: unit -> Async<Author list>
       addAuthor: Author -> Async<Author>
       editAuthor: Author * Author -> Async<bool>

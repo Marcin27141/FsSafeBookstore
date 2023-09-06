@@ -9,6 +9,8 @@ open Feliz
 open Feliz.Bulma
 open Feliz.Router
 open ApiProxy
+open UrlLookup
+open ViewUtils
 
 [<RequireQualifiedAccess>]
 type Page =
@@ -41,8 +43,8 @@ type Msg =
     | AuthorslistMsg of Authorslist.Msg
     | AuthorDetailsMsg of AuthorDetails.Msg
     | EditAuthorMsg of EditAuthor.Msg
-    | GotAuthorForDetails of Author
-    | GotAuthorForEdit of Author
+    | GotAuthorForDetails of Option<Author>
+    | GotAuthorForEdit of Option<Author>
     | SwitchToAuthorDetails of Author
 
 let bookstoreApi = getApiProxy ()
@@ -109,11 +111,19 @@ let updateEditAuthorModel msg editAuthorModel model =
 let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
     match model.CurrentPage, msg with
     | _, GotAuthorForEdit author ->
-        let editModel, cmd = EditAuthor.init author
-        { model with CurrentPage = Page.EditAuthor editModel}, Cmd.map EditAuthorMsg cmd
+        match author with
+        | Some authorValue ->
+            let editModel, cmd = EditAuthor.init authorValue
+            { model with CurrentPage = Page.EditAuthor editModel}, Cmd.map EditAuthorMsg cmd
+        | None ->
+            {model with CurrentPage = Page.NotFound }, Cmd.none   
     | _, GotAuthorForDetails author ->
-        let detailsModel, cmd = AuthorDetails.init author
-        { model with CurrentPage = Page.AuthorDetails detailsModel}, Cmd.map AuthorDetailsMsg cmd
+        match author with
+        | Some authorValue ->
+            let detailsModel, cmd = AuthorDetails.init authorValue
+            { model with CurrentPage = Page.AuthorDetails detailsModel}, Cmd.map AuthorDetailsMsg cmd
+        | None ->
+            {model with CurrentPage = Page.NotFound }, Cmd.none 
     | Page.Authorslist authorModel, AuthorslistMsg authorMsg ->
         updateAuthorslistModel authorMsg authorModel model
     | Page.CreateAuthor authorModel, CreateAuthorMsg authorMsg ->
@@ -133,4 +143,4 @@ let render (model:Model) (dispatch: Msg -> unit) =
     | Page.CreateAuthor model -> CreateAuthor.render model (Msg.CreateAuthorMsg >> dispatch)
     | Page.AuthorDetails model -> AuthorDetails.render model (Msg.AuthorDetailsMsg >> dispatch)
     | Page.EditAuthor model -> EditAuthor.render model (Msg.EditAuthorMsg >> dispatch)
-    | Page.NotFound -> Html.h1 "Page not found"
+    | Page.NotFound -> getPageNotFoundContent ()
