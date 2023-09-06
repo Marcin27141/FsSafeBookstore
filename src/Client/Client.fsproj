@@ -22,13 +22,14 @@
         <None Include="paket.references" />
         <Compile Include="Index.fs" />
         <Compile Include="Login.fs" />
+        <Compile Include="Register.fs" />
         <Compile Include="AfterLogin.fs" />
         <Compile Include="Welcome.fs" />
         <Compile Include="LoginIndex.fs" />
         <Compile Include="App.fs" />
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="Feliz.Bulma.PageLoader" Version="3.0.0" />
+      <PackageReference Include="Feliz.Bulma.PageLoader" Version="2.0.0" />
       <PackageReference Include="Feliz.Router" Version="3.0.1" />
     </ItemGroup>
     <ItemGroup>

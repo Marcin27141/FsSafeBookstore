@@ -12,6 +12,7 @@ open Feliz.Bulma
 [<RequireQualifiedAccess>]
 type Page =
   | Welcome
+  | Register of Register.Model
   | Login of Login.Model
   | Home of AfterLogin.Model
   | AccessDenied
@@ -19,6 +20,7 @@ type Page =
 [<RequireQualifiedAccess>]
 type Url =
   | Welcome
+  | Register
   | Login
   | Home of AfterLogin.Url
 
@@ -28,9 +30,11 @@ type Model =
 let parseUrl = function
     | [] -> Url.Welcome
     | ["login"] -> Url.Login
+    | ["register"] -> Url.Register
     | url -> Url.Home (AfterLogin.parseUrl url)
 
 type Msg =
+    | RegisterMsg of Register.Msg
     | LoginMsg of Login.Msg
     | HomeMsg of AfterLogin.Msg
     | UrlChanged of Url
@@ -52,6 +56,9 @@ let handleUrlChange url model =
         | Url.Login ->
             let loginModel, loginCmd = Login.init()
             { model with CurrentPage = Page.Login loginModel}, Cmd.map LoginMsg loginCmd
+        | Url.Register ->
+            let registerModel, registerCmd = Register.init()
+            { model with CurrentPage = Page.Register registerModel }, Cmd.map RegisterMsg registerCmd
         | _ ->
             { model with CurrentPage = Page.AccessDenied }, Cmd.none
     let updatedPage, cmd = getModelWithPageAndCmd
@@ -64,6 +71,14 @@ let updateLoginModel loginMsg loginModel model =
         { model with User = Some user }, Cmd.navigate(getUrlForPage UrlLookup.Page.Home)
     | Login.Intent.DoNothing ->
         { model with CurrentPage = Page.Login updatedLoginModel }, Cmd.map LoginMsg loginCmd
+
+let updateRegisterModel registerMsg registerModel model =
+    let updatedRegisterModel, registerCmd, intent = Register.update registerMsg registerModel
+    match intent with
+    | Register.Intent.UserRegistered user ->
+        { model with User = Some user }, Cmd.navigate(getUrlForPage UrlLookup.Page.Home)
+    | Register.Intent.DoNothing ->
+        { model with CurrentPage = Page.Register updatedRegisterModel}, Cmd.map RegisterMsg registerCmd
 
 let updateHomeModel homeMsg homeModel model =
     let updatedModel, cmd, intent = AfterLogin.update homeMsg homeModel
@@ -79,6 +94,8 @@ let update (msg: Msg) (model: Model) =
         handleUrlChange url model
     | LoginMsg loginMsg, Page.Login loginModel ->
         updateLoginModel loginMsg loginModel model
+    | RegisterMsg registerMsg, Page.Register registerModel ->
+        updateRegisterModel registerMsg registerModel model
     | HomeMsg homeMsg, Page.Home homeModel ->
         updateHomeModel homeMsg homeModel model
     | _, _ ->
@@ -119,7 +136,7 @@ let getPreLoginLayout children =
                 Bulma.buttons [
                     Bulma.button.a [
                         prop.className "button is-info"
-                        //prop.href (Router.format(""))
+                        prop.href (Router.format("register"))
                         prop.children [
                             Html.strong "Register"
                         ]
@@ -195,6 +212,7 @@ let render (model: Model) (dispatch: Msg -> unit) =
             let children =
                 match model.CurrentPage with
                 | Page.Welcome -> Welcome.render
+                | Page.Register registerState -> Register.render registerState (RegisterMsg >> dispatch)
                 | Page.Login loginState -> Login.render loginState (LoginMsg >> dispatch)
                 | _ -> getAccessDeniedPage ()
             getPreLoginLayout children        
