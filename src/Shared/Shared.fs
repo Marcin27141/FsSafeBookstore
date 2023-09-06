@@ -11,6 +11,12 @@ type Book = { Id: Guid; Title: string; Author: Author }
 [<CLIMutable>]
 type User = { Id: Guid; Username: string; Password: string; FirstName: string; LastName: string }
 
+type Remote<'a> =
+    | EmptyState
+    | Loading
+    | LoadError of string
+    | Body of 'a
+
 module Author =
     let isValid (firstName : string, lastName: string) =
         not (String.IsNullOrWhiteSpace firstName)

@@ -11,7 +11,7 @@ open ViewUtils
 open ApiProxy
 open Feliz.Router
 
-type Model = { Books: Book list; IsLoading: bool }
+type Model = { Books: Remote<list<Book>> }
 
 [<RequireQualifiedAccess>]
 type Intent =
@@ -19,6 +19,7 @@ type Intent =
     | DoNothing
 
 type Msg =
+    | LoadBooks
     | GotBooks of Book list
     | ShowBookDetails of Book
     | DeleteBook of Book
@@ -27,24 +28,26 @@ type Msg =
 let bookstoreApi = getApiProxy ()
 
 let init () : Model * Cmd<Msg> =
-    let model = { Books = []; IsLoading = true }
-    let initialCmd = Cmd.OfAsync.perform bookstoreApi.getBooks () GotBooks
-    model, initialCmd
+    let model = { Books = EmptyState }
+    model, Cmd.ofMsg LoadBooks
 
 let update (msg: Msg) (model: Model) =
     match msg with
+    | LoadBooks ->
+        let cmd = Cmd.OfAsync.perform bookstoreApi.getBooks () GotBooks
+        { model with Books = Loading }, cmd, Intent.DoNothing
     | GotBooks books ->
-        let newModel = { model with Books = books; IsLoading = false }
+        let newModel = { model with Books = Body books }
         newModel, Cmd.none, Intent.DoNothing
     | ShowBookDetails book ->
-        { model with IsLoading = true }, Cmd.none, Intent.ShowBookDetails book
+        model, Cmd.none, Intent.ShowBookDetails book
     | DeleteBook book ->
         let cmd = Cmd.OfAsync.perform bookstoreApi.deleteBook book BookDeleted
-        { model with IsLoading = true }, cmd, Intent.DoNothing
+        model, cmd, Intent.DoNothing
     | BookDeleted true ->
-        let cmd = Cmd.OfAsync.perform bookstoreApi.getBooks () GotBooks
-        { model with IsLoading = false }, cmd, Intent.DoNothing
-    | _ -> model, Cmd.none, Intent.DoNothing
+        model, Cmd.ofMsg LoadBooks, Intent.DoNothing
+    | _ ->
+        model, Cmd.none, Intent.DoNothing
 
 let getCardFromBook (dispatch: Msg -> unit) (book: Book)  =
     Bulma.card [
@@ -90,16 +93,13 @@ let getCardFromBook (dispatch: Msg -> unit) (book: Book)  =
     
 
 let render (model: Model) (dispatch: Msg -> unit) =
-    if model.IsLoading then
-        getPageLoader ()
-    else
-        if model.Books.Length > 0 then
-            Html.div [
-                prop.children (model.Books |> List.map (fun book -> getCardFromBook dispatch book))
-            ]
-        else
-            Html.text "No books found"
-
-
-
-
+    match model.Books with
+    | EmptyState -> Html.none
+    | Loading -> getPageLoader ()
+    | LoadError e -> getErrorPageContent e
+    | Body [] ->
+        Html.text "No books found"
+    | Body books ->
+        Html.div [
+            prop.children (books |> List.map (fun book -> getCardFromBook dispatch book))
+        ]

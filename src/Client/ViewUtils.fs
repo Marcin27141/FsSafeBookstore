@@ -24,6 +24,12 @@ let getPageNotFoundContent () =
         prop.text "Page not found"
     ]
 
+let getErrorPageContent (error: string) =
+    Bulma.title [
+        text.hasTextCentered
+        prop.text error
+    ]
+
 let getPageLoader () =
     Html.div [
         prop.style [

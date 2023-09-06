@@ -6,12 +6,10 @@ open Feliz.Bulma
 open Shared
 open Fable.Remoting.Client
 open Elmish
-open System
 open ViewUtils
 open ApiProxy
-open Feliz.Router
 
-type Model = { Authors: Author list; IsLoading: bool }
+type Model = { Authors: Remote<list<Author>> }
 
 [<RequireQualifiedAccess>]
 type Intent =
@@ -19,6 +17,7 @@ type Intent =
     | DoNothing
 
 type Msg =
+    | LoadAuthors
     | GotAuthors of Author list
     | ShowAuthorDetails of Author
     | DeleteAuthor of Author
@@ -27,24 +26,27 @@ type Msg =
 let bookstoreApi = getApiProxy ()
 
 let init () : Model * Cmd<Msg> =
-    let model = { Authors = []; IsLoading = true }
-    let initialCmd = Cmd.OfAsync.perform bookstoreApi.getAuthors () GotAuthors
-    model, initialCmd
+    let model = { Authors = EmptyState }
+    model, Cmd.ofMsg LoadAuthors
 
 let update (msg: Msg) (model: Model) =
     match msg with
+    | LoadAuthors ->
+        let updatedModel = { model with Authors = Loading }
+        let cmd = Cmd.OfAsync.perform bookstoreApi.getAuthors () GotAuthors
+        updatedModel, cmd, Intent.DoNothing
     | GotAuthors authors ->
-        let newModel = { model with Authors = authors; IsLoading = false }
+        let newModel = { model with Authors = Body authors }
         newModel, Cmd.none, Intent.DoNothing
     | ShowAuthorDetails author ->
-        { model with IsLoading = true }, Cmd.none, Intent.ShowAuthorDetails author
+        model, Cmd.none, Intent.ShowAuthorDetails author
     | DeleteAuthor author ->
         let cmd = Cmd.OfAsync.perform bookstoreApi.deleteAuthor author AuthorDeleted
-        { model with IsLoading = true }, cmd, Intent.DoNothing
+        model, cmd, Intent.DoNothing
     | AuthorDeleted true ->
-        let cmd = Cmd.OfAsync.perform bookstoreApi.getAuthors () GotAuthors
-        { model with IsLoading = false }, cmd, Intent.DoNothing
-    | _ -> model, Cmd.none, Intent.DoNothing
+        model, Cmd.ofMsg LoadAuthors, Intent.DoNothing
+    | _ ->
+    model, Cmd.none, Intent.DoNothing
 
 let getCardFromAuthor (dispatch: Msg -> unit) (author: Author)  =
     Bulma.card [
@@ -85,16 +87,13 @@ let getCardFromAuthor (dispatch: Msg -> unit) (author: Author)  =
     
 
 let render (model: Model) (dispatch: Msg -> unit) =
-    if model.IsLoading then
-        getPageLoader ()
-    else
-        if model.Authors.Length > 0 then
-            Html.div [
-                prop.children (model.Authors |> List.map (fun author -> getCardFromAuthor dispatch author))
-            ]
-        else
-            Html.text "No books found"
-
-
-
-
+    match model.Authors with
+    | EmptyState -> Html.none
+    | Loading -> getPageLoader ()
+    | LoadError e -> getErrorPageContent e
+    | Body [] ->
+        Html.text "No authors found"
+    | Body authors ->
+        Html.div [
+            prop.children (authors |> List.map (fun author -> getCardFromAuthor dispatch author))
+        ]
