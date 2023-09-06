@@ -41,8 +41,11 @@ let init() =
 let handleUrlChange url model =
     let getModelWithPageAndCmd =
         match url with
-        | Url.Welcome ->
+        | Url.Welcome when model.User.IsNone ->
             { model with CurrentPage = Page.Welcome }, Cmd.none
+        | Url.Welcome when model.User.IsSome ->
+            let homeModel, homeCmd = AfterLogin.init (model.User.Value, AfterLogin.parseUrl([]))
+            { model with CurrentPage = Page.Home homeModel}, Cmd.map HomeMsg homeCmd
         | Url.Home homeUrl when model.User.IsSome ->
             let homeModel, homeCmd = AfterLogin.init (model.User.Value, homeUrl)
             { model with CurrentPage = Page.Home homeModel}, Cmd.map HomeMsg homeCmd

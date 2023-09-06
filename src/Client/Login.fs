@@ -3,6 +3,7 @@ module Login
 
 open Elmish
 open Feliz
+open Feliz.Bulma
 open Shared
 open Fable.Remoting.Client
 open ApiProxy
@@ -73,33 +74,17 @@ let renderLoginOutcome (loginProcess: LoginProcess)=
     | _ -> Html.none
 
 let layout (children: ReactElement list) =
-    Html.section [
-        prop.className "hero is-fullheight"
-        prop.style [
-            style.backgroundSize "cover"
-            style.backgroundPosition "no-repeat center center fixed"
-        ]
-        prop.children [
-            Html.div [
-                prop.className "hero-body"
-                prop.children [
-                    Html.div [
-                        prop.className "container"
-                        prop.children [
-                            Html.div [
-                                prop.className "columns is-centered"
-                                prop.children [
-                                    Html.div [
-                                        prop.className "column is-6-tablet is-4-desktop is-4-widescreen"
-                                        prop.children children
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
+    Bulma.container [
+        Html.div [
+            prop.className "columns is-centered"
+            prop.children [
+                Html.div [
+                    prop.className "column is-6-tablet is-4-desktop is-4-widescreen"
+                    prop.children children
                 ]
             ]
         ]
+        
     ]
 
 let render (model: Model) (dispatch: Msg -> unit) =

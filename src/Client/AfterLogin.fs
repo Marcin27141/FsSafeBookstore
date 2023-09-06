@@ -24,7 +24,7 @@ type Url =
   | NotFound
 
 let parseUrl = function
-    | ["home"] -> Url.AfterLogin
+    | ["home"] | [] -> Url.AfterLogin
     | "booklist" :: booklistSegment -> Url.Booklist (Index.parseUrl booklistSegment)
     | _ -> Url.NotFound
 
@@ -148,7 +148,7 @@ let getHomePageContent (model: Model) (dispatch: Msg -> unit) =
                     prop.children [
                         Bulma.navbarBrand.div [
                             Bulma.navbarItem.a [
-                                prop.href (Router.format([]))
+                                prop.href (Router.format(["home"]))
                                 prop.children [
                                     Html.img [ prop.src "https://bulma.io/images/bulma-logo-white.png"; prop.height 28; prop.width 112; ]
                                 ]
