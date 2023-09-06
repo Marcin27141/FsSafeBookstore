@@ -5,6 +5,7 @@
         <DefineConstants>FABLE_COMPILER</DefineConstants>
     </PropertyGroup>
     <ItemGroup>
+        <Compile Include="ReactSpinner.fs" />
         <Compile Include="UrlLookup.fs" />
         <Compile Include="ViewUtils.fs" />
         <Compile Include="ApiProxy.fs" />

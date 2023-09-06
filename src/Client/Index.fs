@@ -67,7 +67,7 @@ let render (model:Model) (dispatch: Msg -> unit) =
             column.isOffset3
             prop.children [
                 match model.CurrentPage with
-                | Page.Loading -> Html.div [ Bulma.pageLoader.isActive ]
+                | Page.Loading -> getPageLoader ()
                 | Page.BooksIndex model -> BooksIndex.render model (Msg.BooksIndexMsg >> dispatch)
                 | Page.AuthorsIndex model -> AuthorsIndex.render model (Msg.AuthorsIndexMsg >> dispatch)
                 | Page.NotFound -> getPageNotFoundContent ()

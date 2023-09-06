@@ -91,10 +91,7 @@ let getCardFromBook (dispatch: Msg -> unit) (book: Book)  =
 
 let render (model: Model) (dispatch: Msg -> unit) =
     if model.IsLoading then
-        Html.div [
-            Bulma.pageLoader.isActive
-            Bulma.pageLoader.isSuccess
-        ]
+        getPageLoader ()
     else
         if model.Books.Length > 0 then
             Html.div [

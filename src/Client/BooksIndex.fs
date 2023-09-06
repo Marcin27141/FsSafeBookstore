@@ -137,7 +137,7 @@ let update (msg: Msg) (model:Model) :Model * Cmd<Msg> =
 
 let render (model:Model) (dispatch: Msg -> unit) =
     match model.CurrentPage with
-    | Page.Loading -> Html.div [ Bulma.pageLoader.isActive ]
+    | Page.Loading -> getPageLoader ()
     | Page.BookList model -> Booklist.render model (Msg.BooklistMsg >> dispatch)
     | Page.CreateBook model -> CreateBook.render model (Msg.CreateBookMsg >> dispatch)
     | Page.EditBook model -> EditBook.render model (Msg.EditBookMsg >> dispatch)
